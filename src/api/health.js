@@ -46,6 +46,18 @@ export async function handleHealth(request, env) {
       NVIDIA_API_KEY: Boolean(env.NVIDIA_API_KEY),
       REVELATIONS_KV: Boolean(env.REVELATIONS),
     },
+
+    /**
+     * Los NOMBRES de todo lo que el Worker ve en su entorno. Nunca los valores.
+     *
+     * Sirve para distinguir dos fallas que se ven idénticas desde afuera y se
+     * arreglan en lugares distintos:
+     *   · el nombre está mal escrito (NVIDIA_APIKEY, NVIDIA_API_KEY con un
+     *     espacio al final) → aparece acá, mal escrito, y se ve de una;
+     *   · el secreto se cargó en otro lado (por ejemplo en "Build variables",
+     *     que son del BUILD y no del runtime) → no aparece en absoluto.
+     */
+    variablesVisibles: Object.keys(env ?? {}).sort(),
     colo: request.headers.get('cf-ray')?.split('-')[1] ?? null,
   };
 
