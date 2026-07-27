@@ -1,0 +1,97 @@
+/**
+ * tokens.css — Identidad visual de El Oráculo del Día.
+ *
+ * Única fuente de verdad de color, tipografía, ritmo y tiempos. Ninguna hoja
+ * posterior debería escribir un hex ni un px a mano.
+ *
+ * La paleta parte de tres decisiones:
+ *   · El negro no es #000: es #05040a, un negro con una gota de violeta. En
+ *     pantalla OLED el negro puro se lee como un agujero apagado; este respira.
+ *   · El dorado es envejecido, no metálico brillante: latón y pergamino, no oro
+ *     de casino.
+ *   · El violeta aparece en dosis mínimas. Es la sombra de la paleta, nunca el
+ *     protagonista; en cuanto compite con el dorado, la cosa se vuelve póster
+ *     de feria esotérica.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Fondos ---- */
+  --ink: #05040a;
+  --ink-raised: #0b0913;
+  --ink-panel: #100d1a;
+  --ink-line: #1d1830;
+
+  /* ---- Dorado envejecido ---- */
+  --gold-deep: #8a6f22;
+  --gold: #c9a227;
+  --gold-soft: #e3bd6b;
+  --gold-pale: #f4e2b0;
+
+  /* ---- Violeta (sombra, no acento principal) ---- */
+  --violet-deep: #1a1130;
+  --violet: #2a1b4d;
+  --violet-soft: #6b4fa8;
+
+  /* ---- Texto ---- */
+  --text: #ece7dd;
+  --text-muted: #a49bb0;
+  --text-faint: #6f6880;
+
+  /* ---- Estados ---- */
+  --ok: #9ad6a0;
+  --warn: #e5b98b;
+  --error: #e58b8b;
+
+  /* ---- Tipografía ---- */
+  --font-serif: 'Cormorant Garamond', 'EB Garamond', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Jost', 'Futura', 'Century Gothic', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Escala fluida: un solo valor sirve de móvil a escritorio. */
+  --step--2: clamp(0.69rem, 0.67rem + 0.11vw, 0.76rem);
+  --step--1: clamp(0.83rem, 0.79rem + 0.19vw, 0.95rem);
+  --step-0: clamp(1rem, 0.95rem + 0.25vw, 1.19rem);
+  --step-1: clamp(1.2rem, 1.12rem + 0.4vw, 1.49rem);
+  --step-2: clamp(1.44rem, 1.31rem + 0.65vw, 1.86rem);
+  --step-3: clamp(1.73rem, 1.53rem + 1vw, 2.33rem);
+  --step-4: clamp(2.07rem, 1.77rem + 1.5vw, 2.91rem);
+  --step-5: clamp(2.49rem, 2.04rem + 2.24vw, 3.64rem);
+
+  --tracking-wide: 0.22em;
+  --tracking-mid: 0.1em;
+
+  /* ---- Ritmo ---- */
+  --space-2xs: 0.35rem;
+  --space-xs: 0.6rem;
+  --space-s: 1rem;
+  --space-m: 1.6rem;
+  --space-l: 2.6rem;
+  --space-xl: 4.2rem;
+
+  --radius-s: 3px;
+  --radius-m: 8px;
+  --radius-pill: 999px;
+
+  /* ---- Tiempos ---- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 180ms;
+  --dur-mid: 420ms;
+  --dur-slow: 900ms;
+
+  /* ---- Capas ---- */
+  --z-scene: 0;
+  --z-veil: 1;
+  --z-ui: 2;
+  --z-top: 10;
+}
+
+/* Movimiento reducido: se respeta en todo el sitio, no solo en la escena 3D. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 1ms;
+    --dur-mid: 1ms;
+    --dur-slow: 1ms;
+  }
+}

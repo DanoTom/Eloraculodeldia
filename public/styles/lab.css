@@ -1,0 +1,194 @@
+/**
+ * lab.css — Estilos del laboratorio visual (/lab.html).
+ *
+ * Es una página de validación, no una pantalla de producto, pero usa la misma
+ * identidad: si la base visual no se sostiene acá, no se va a sostener después.
+ */
+
+/**
+ * El encabezado queda arriba y TODO lo demás abajo (`margin-block-end: auto`
+ * empuja el resto). Así la franja central queda libre para la figura 3D: si el
+ * pie de figura se centrara verticalmente, se superpondría justo con ella.
+ */
+.lab {
+  justify-content: flex-end;
+  gap: var(--space-m);
+  padding: clamp(var(--space-s), 3vw, var(--space-l));
+}
+
+/* ---- Encabezado ---- */
+
+.lab__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin-block-end: auto;
+}
+
+.lab__title {
+  font-size: var(--step-2);
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--text) 92%, transparent);
+}
+
+/* ---- Pie de figura ---- */
+
+.lab__figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+  text-align: center;
+  margin-block-end: var(--space-s);
+}
+
+.lab__figure-number {
+  font-family: var(--font-serif);
+  font-size: var(--step-5);
+  font-weight: 300;
+  line-height: 1;
+  color: var(--gold-soft);
+  text-shadow: 0 0 40px color-mix(in srgb, var(--gold) 45%, transparent);
+}
+
+.lab__figure-title {
+  font-family: var(--font-serif);
+  font-size: var(--step-2);
+  font-style: italic;
+  color: var(--text);
+}
+
+.lab__figure-note {
+  max-width: 46ch;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+.lab__figure-figure {
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ---- Panel ---- */
+
+.lab__panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-s);
+  padding: var(--space-s);
+  border: 1px solid var(--ink-line);
+  border-radius: var(--radius-m);
+  background: color-mix(in srgb, var(--ink-panel) 72%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.lab__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.chip {
+  appearance: none;
+  min-width: 2.75rem;
+  padding: 0.45em 0.7em;
+  border: 1px solid var(--ink-line);
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.chip:hover {
+  color: var(--gold-soft);
+  border-color: color-mix(in srgb, var(--gold) 40%, transparent);
+}
+
+.chip[aria-pressed='true'] {
+  color: var(--ink);
+  background: var(--gold-soft);
+  border-color: var(--gold-soft);
+}
+
+.chip--master {
+  font-style: italic;
+}
+
+/* ---- Métricas ---- */
+
+.lab__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-s);
+  margin: 0;
+  font-size: var(--step--2);
+  letter-spacing: 0.06em;
+}
+
+.lab__stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+}
+
+.lab__stats dt {
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.lab__stats dd {
+  margin: 0;
+  color: var(--gold-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.lab__stats dd[data-state='warn'] {
+  color: var(--warn);
+}
+
+.lab__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+/* ---- Resultado de los tests ---- */
+
+.lab__result {
+  font-size: var(--step--2);
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+.lab__result[data-state='ok'] {
+  color: var(--ok);
+}
+
+.lab__result[data-state='fail'] {
+  color: var(--error);
+}
+
+@media (max-width: 720px) {
+  .lab__panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lab__figure-note {
+    display: none; /* en vertical, el espacio es para la figura */
+  }
+}

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Laboratorio visual · El Oráculo del Día</title>
+    <meta
+      name="description"
+      content="Página de validación de la base 3D: campo de partículas, figuras de geometría sagrada y tests del núcleo numerológico."
+    />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#05040a" />
+
+    <link rel="preconnect" href="/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/vendor/fonts/fonts.css" />
+    <link rel="stylesheet" href="/styles/tokens.css" />
+    <link rel="stylesheet" href="/styles/base.css" />
+    <link rel="stylesheet" href="/styles/lab.css" />
+
+    <!--
+      El importmap tiene que ir antes que cualquier <script type="module">.
+      Todo apunta a /vendor/, que genera `npm run vendor`: cero peticiones a CDNs.
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/vendor/three/three.module.js",
+          "three/addons/": "/vendor/three/addons/",
+          "gsap": "/js/lib/gsap.js"
+        }
+      }
+    </script>
+    <!-- GSAP es UMD: script clásico, corre antes que los módulos. -->
+    <script src="/vendor/gsap/gsap.min.js"></script>
+  </head>
+
+  <body>
+    <div class="scene"><canvas id="scene" aria-hidden="true"></canvas></div>
+    <div class="veil" aria-hidden="true"></div>
+
+    <main class="stage lab">
+      <header class="lab__head">
+        <p class="eyebrow">Laboratorio visual · base 3D</p>
+        <h1 class="lab__title">El Oráculo del Día</h1>
+      </header>
+
+      <section class="lab__figure" aria-live="polite">
+        <p class="lab__figure-number" id="figure-number">—</p>
+        <p class="lab__figure-title" id="figure-title">&nbsp;</p>
+        <p class="lab__figure-figure" id="figure-key">&nbsp;</p>
+        <p class="lab__figure-note" id="figure-note">&nbsp;</p>
+      </section>
+
+      <footer class="lab__panel">
+        <nav class="lab__chips" id="chips" aria-label="Número del oráculo a previsualizar"></nav>
+
+        <dl class="lab__stats" id="stats">
+          <div><dt>fps</dt><dd data-stat="fps">—</dd></div>
+          <div><dt>nivel</dt><dd data-stat="tier">—</dd></div>
+          <div><dt>partículas</dt><dd data-stat="particles">—</dd></div>
+          <div><dt>bloom</dt><dd data-stat="bloom">—</dd></div>
+          <div><dt>dpr</dt><dd data-stat="pixelRatio">—</dd></div>
+          <div><dt>draw calls</dt><dd data-stat="calls">—</dd></div>
+        </dl>
+
+        <div class="lab__actions">
+          <button class="btn" id="run-tests" type="button">Correr tests</button>
+          <p class="lab__result" id="test-result" role="status">Consola: <code>Oraculo.test()</code></p>
+        </div>
+      </footer>
+    </main>
+
+    <script type="module" src="/js/lab.js"></script>
+  </body>
+</html>

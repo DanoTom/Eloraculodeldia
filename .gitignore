@@ -1,0 +1,17 @@
+node_modules/
+
+# Dependencias vendorizadas: las genera `npm run vendor` (postinstall) a partir
+# de las versiones fijadas en package.json. Cloudflare Pages las regenera en
+# cada build, así que no tiene sentido versionar 1 MB de binarios.
+public/vendor/
+
+# Cloudflare / wrangler
+.wrangler/
+.dev.vars
+.env
+.env.*
+
+# Sistema
+.DS_Store
+*.log
+npm-debug.log*

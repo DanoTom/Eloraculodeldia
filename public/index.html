@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>El Oráculo del Día</title>
+    <meta
+      name="description"
+      content="Una revelación numerológica por día. Una sola vez, y hasta que el sol vuelva a nacer."
+    />
+    <meta name="theme-color" content="#05040a" />
+    <meta property="og:title" content="El Oráculo del Día" />
+    <meta
+      property="og:description"
+      content="Una revelación numerológica por día. Una sola vez, y hasta que el sol vuelva a nacer."
+    />
+    <meta property="og:type" content="website" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/vendor/fonts/fonts.css" />
+    <link rel="stylesheet" href="/styles/tokens.css" />
+    <link rel="stylesheet" href="/styles/base.css" />
+    <link rel="stylesheet" href="/styles/cover.css" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/vendor/three/three.module.js",
+          "three/addons/": "/vendor/three/addons/",
+          "gsap": "/js/lib/gsap.js"
+        }
+      }
+    </script>
+    <script src="/vendor/gsap/gsap.min.js"></script>
+  </head>
+
+  <body>
+    <div class="scene"><canvas id="scene" aria-hidden="true"></canvas></div>
+    <div class="veil" aria-hidden="true"></div>
+
+    <main class="stage cover">
+      <div class="cover__inner">
+        <p class="cover__mark" data-enter>
+          <span class="cover__mark-number" id="day-number" aria-hidden="true">—</span>
+          <span class="cover__mark-label" id="day-label">Número del día</span>
+        </p>
+
+        <h1 class="cover__title" data-enter>El Oráculo <em>del Día</em></h1>
+
+        <p class="cover__lede" data-enter>
+          Una revelación por día, calculada sobre tu nombre y tu fecha de nacimiento. Una sola vez,
+          y hasta que el sol se oculte y vuelva a nacer.
+        </p>
+
+        <hr class="rule" data-enter />
+
+        <div class="cover__meta" data-enter>
+          <a class="btn" href="/lab.html">Ver la base visual</a>
+          <p class="cover__note">
+            Primera piedra: el cálculo numerológico y la escena 3D ya están en su lugar. El
+            formulario, el bloqueo diario y la revelación llegan en las próximas iteraciones.
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/js/cover.js"></script>
+  </body>
+</html>

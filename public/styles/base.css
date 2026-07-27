@@ -1,0 +1,215 @@
+/**
+ * base.css — Reset acotado, capas de la escena y primitivas de interfaz.
+ *
+ * La página se compone en tres capas apiladas:
+ *   1. `.scene` — el canvas de three.js, fijo, a pantalla completa.
+ *   2. `.veil`  — viñeta y grano. Solo CSS: hacerlo en el shader costaría
+ *                 fillrate por nada.
+ *   3. `.stage` — la interfaz, que scrollea normalmente por encima.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--step-0);
+  font-weight: 300;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: 0.005em;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--gold-soft);
+  text-decoration-color: color-mix(in srgb, var(--gold-soft) 35%, transparent);
+  text-underline-offset: 0.25em;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+a:hover {
+  color: var(--gold-pale);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--gold) 30%, transparent);
+  color: var(--gold-pale);
+}
+
+:focus-visible {
+  outline: 1px solid var(--gold-soft);
+  outline-offset: 3px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Capas                                                               */
+/* ------------------------------------------------------------------ */
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-scene);
+  background: var(--ink);
+}
+
+.scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/**
+ * Viñeta + grano.
+ *
+ * El grano es un feTurbulence embebido como data URI: cuesta un decode y cero
+ * peticiones de red, y es lo que evita el banding en degradados oscuros tan
+ * largos. Se mantiene bajísimo a propósito — se tiene que notar solo cuando se
+ * lo apaga.
+ */
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-veil);
+  pointer-events: none;
+}
+
+.veil::before,
+.veil::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.veil::before {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 45%, transparent 0%, color-mix(in srgb, var(--ink) 55%, transparent) 62%, var(--ink) 100%),
+    radial-gradient(ellipse 120% 80% at 50% 120%, color-mix(in srgb, var(--violet) 45%, transparent) 0%, transparent 60%);
+}
+
+.veil::after {
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+}
+
+.stage {
+  position: relative;
+  z-index: var(--z-ui);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ------------------------------------------------------------------ */
+/* Primitivas                                                          */
+/* ------------------------------------------------------------------ */
+
+/** Texto de interfaz en versalitas espaciadas: etiquetas, pies, marcas. */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--step--2);
+  font-weight: 400;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/** El registro serif de las revelaciones. */
+.revealed {
+  font-family: var(--font-serif);
+  font-size: var(--step-1);
+  font-weight: 300;
+  line-height: 1.62;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+.rule {
+  width: 100%;
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--ink-line) 20%, var(--ink-line) 80%, transparent);
+}
+
+.btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0.7em 1.5em;
+  border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+  color: var(--gold-soft);
+  font-family: var(--font-sans);
+  font-size: var(--step--1);
+  font-weight: 400;
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.btn:hover {
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  border-color: color-mix(in srgb, var(--gold) 65%, transparent);
+  color: var(--gold-pale);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/** Solo para lectores de pantalla. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/** Aviso cuando no hay WebGL: la escena desaparece, el contenido no. */
+.no-webgl .scene {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 40%, var(--violet-deep) 0%, transparent 70%),
+    var(--ink);
+}

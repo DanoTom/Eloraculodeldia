@@ -1,0 +1,26 @@
+# Cabeceras de Cloudflare Pages.
+# La primera regla que coincide gana; las rutas más específicas van primero.
+
+# Dependencias vendorizadas: el nombre incluye la versión fijada en
+# package.json, así que un cambio de versión cambia el contenido del archivo.
+# Se cachean fuerte, pero con `must-revalidate` en vez de `immutable`, porque
+# la ruta en sí no lleva hash.
+/vendor/*
+  Cache-Control: public, max-age=604800, must-revalidate
+
+/vendor/fonts/files/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+# Código propio: se revalida siempre, para que un deploy se vea al instante.
+/js/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/styles/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), interest-cohort=()
+  X-Frame-Options: SAMEORIGIN
