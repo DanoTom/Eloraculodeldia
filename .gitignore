@@ -15,3 +15,7 @@ public/vendor/
 .DS_Store
 *.log
 npm-debug.log*
+
+.dev.vars*
+!.dev.vars.example
+!.env.example
