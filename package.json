@@ -9,7 +9,9 @@
     "postinstall": "node scripts/vendor.mjs",
     "test": "node scripts/run-tests.mjs",
     "dev": "wrangler pages dev public --compatibility-date=2025-01-01",
-    "serve": "node scripts/serve.mjs"
+    "serve": "node scripts/serve.mjs",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "5.3.0",
@@ -18,7 +20,7 @@
     "three": "0.185.1"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0"
+    "wrangler": "^4.114.0"
   },
   "engines": {
     "node": ">=20"
