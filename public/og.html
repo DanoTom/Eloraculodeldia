@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tarjeta para compartir · El Oráculo del Día</title>
+    <meta name="robots" content="noindex" />
+
+    <link rel="stylesheet" href="/vendor/fonts/fonts.css" />
+    <link rel="stylesheet" href="/styles/tokens.css" />
+
+    <style>
+      /**
+       * Plantilla de la imagen que ven WhatsApp, Twitter y compañía al
+       * compartir el link.
+       *
+       * Es una página real y no un archivo binario opaco: para regenerar
+       * `og.jpg` se abre esta página en 1200×630 y se captura como JPEG. Así la
+       * tarjeta se rehace cuando cambia la identidad, en vez de quedar congelada
+       * en una versión vieja que nadie sabe de dónde salió.
+       *
+       * JPEG y no PNG: el grano de la textura arruina la compresión sin pérdida
+       * (879 KB contra 56) y a este tamaño nadie nota la diferencia.
+       *
+       * 1200×630 es la proporción que respetan todas las plataformas.
+       */
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        position: relative;
+        display: grid;
+        place-items: center;
+        background: var(--ink);
+        color: var(--text);
+        /* El verde profundo abajo, como en la escena. */
+        background-image:
+          radial-gradient(ellipse 70% 60% at 50% 42%, color-mix(in srgb, var(--green) 40%, transparent) 0%, transparent 70%),
+          radial-gradient(ellipse 120% 70% at 50% 118%, color-mix(in srgb, var(--green-deep) 90%, transparent) 0%, transparent 60%);
+      }
+
+      /* Grano y trama, igual que el velo del sitio. */
+      body::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        opacity: 0.05;
+        pointer-events: none;
+        background-image:
+          url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
+          url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='w'><feTurbulence type='fractalNoise' baseFrequency='0.02 0.55' numOctaves='2' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23w)'/></svg>");
+      }
+
+      .card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 26px;
+        text-align: center;
+        z-index: 1;
+      }
+
+      /* La marca: vesica piscis dentro del aro de estrellas. */
+      .mark {
+        width: 210px;
+        height: 210px;
+        margin-block-end: 8px;
+      }
+
+      .eyebrow {
+        font-family: var(--font-sans);
+        font-size: 19px;
+        font-weight: 400;
+        letter-spacing: 0.34em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+
+      .title {
+        font-family: var(--font-serif);
+        font-size: 96px;
+        font-weight: 300;
+        line-height: 1;
+        letter-spacing: 0.01em;
+      }
+
+      .title em {
+        font-style: italic;
+        color: var(--gold-soft);
+      }
+
+      .lede {
+        max-width: 26ch;
+        font-family: var(--font-serif);
+        font-size: 30px;
+        font-weight: 300;
+        font-style: italic;
+        line-height: 1.4;
+        color: color-mix(in srgb, var(--text) 74%, transparent);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card">
+      <svg class="mark" viewBox="0 0 200 200" aria-hidden="true">
+        <!-- Aro del halo. -->
+        <circle cx="100" cy="100" r="92" fill="none" stroke="#c9a227" stroke-width="1" opacity="0.4" />
+
+        <!--
+          Estrellas de cuatro puntas sobre el aro.
+          La plantilla va en <defs>: sin eso el propio molde se dibuja en el
+          origen del viewBox y aparece una estrella suelta en la esquina.
+        -->
+        <defs>
+          <path id="star" d="M0,-7 L1.6,-1.6 L7,0 L1.6,1.6 L0,7 L-1.6,1.6 L-7,0 L-1.6,-1.6 Z" />
+        </defs>
+        <g fill="#f2e2b4">
+          <use href="#star" transform="translate(100,8)" />
+          <use href="#star" transform="translate(165,35) scale(0.7)" />
+          <use href="#star" transform="translate(192,100) scale(0.85)" />
+          <use href="#star" transform="translate(165,165) scale(0.6)" />
+          <use href="#star" transform="translate(100,192) scale(0.8)" />
+          <use href="#star" transform="translate(35,165) scale(0.7)" />
+          <use href="#star" transform="translate(8,100) scale(0.9)" />
+          <use href="#star" transform="translate(35,35) scale(0.65)" />
+        </g>
+
+        <!-- Vesica piscis: la marca del oráculo. -->
+        <g fill="none" stroke="#dfbc6d" stroke-width="1.6">
+          <circle cx="82" cy="100" r="42" />
+          <circle cx="118" cy="100" r="42" />
+        </g>
+        <circle cx="100" cy="100" r="3.4" fill="#f2e2b4" />
+      </svg>
+
+      <p class="eyebrow">El Oráculo del Día</p>
+      <h1 class="title">Una revelación <em>por día</em></h1>
+      <p class="lede">Una sola vez, y hasta que el sol vuelva a nacer.</p>
+    </div>
+  </body>
+</html>

@@ -62,12 +62,16 @@ Parámetros del laboratorio:
 │   ├── api/
 │   │   ├── revelation.js      POST — GLM-5.2 + caché en KV + respaldo
 │   │   └── health.js          GET  — verifica bindings y secretos
-│   └── lib/respond.js         respuestas JSON con las cabeceras correctas
+│   └── lib/
+│       ├── respond.js         respuestas JSON con las cabeceras correctas
+│       └── nim.js             endpoint y modelo de NVIDIA, en un solo lugar
 │
 ├── public/                    ← esto es exactamente lo que se despliega
 │   ├── index.html             el oráculo (las cuatro pantallas)
 │   ├── lab.html               laboratorio visual
 │   ├── type.html              espécimen de tipografía y paleta
+│   ├── og.html                plantilla de la tarjeta para compartir
+│   ├── og.jpg                  ↑ generada desde ahí, a 1200×630
 │   ├── 404.html               esa puerta no existe
 │   ├── favicon.svg
 │   ├── _headers               caché y cabeceras de seguridad
@@ -316,6 +320,43 @@ cancela el gesto en el mismo instante en que empieza. Con captura de puntero
 `pointerleave` no significa "se fue"; alejarse se detecta midiendo la posición
 en `pointermove`.
 
+### Accesibilidad
+
+No es un extra, es parte de que el producto funcione:
+
+- **El foco se mueve con la pantalla.** Cada pantalla es enfocable y recibe el
+  foco al aparecer. Sin esto, quien navega con teclado o lector de pantalla
+  quedaba parado sobre un botón que acababa de desaparecer. En la carga inicial
+  NO se roba el foco: eso sería agresivo.
+- **La revelación se anuncia.** El texto se inserta de una sola vez —la animación
+  es solo opacidad— así que un `aria-live="polite"` lo lee completo y una vez.
+  Por eso mismo la animación no puede ir agregando caracteres al DOM.
+- **El campo de la ceremonia va `aria-hidden`**: las letras girando son
+  espectáculo visual y leerlas glifo por glifo sería ruido. Lo que se anuncia es
+  el pie de página, que es lo que informa avance.
+- **Contraste AA en todo el texto.** `--text-faint`, el color más tenue, está en
+  5.16:1 sobre el fondo.
+- **`prefers-reduced-motion`** frena la escena, comprime la ceremonia a un
+  segundo, muestra el texto sin animar y convierte el gesto de cierre en un clic.
+
+### El nombre compuesto
+
+La tabla pitagórica solo conoce A-Z, así que "Ana María" se suma como ANAMARIA:
+el espacio no separa nada. El campo lo dice mientras escribís — *«Se leerá como
+ANAMARIA»* — en vez de descartar el espacio en silencio y dejar que alguien crea
+que el segundo nombre no cuenta.
+
+### Cuando algo se rompe
+
+La ceremonia va aislada en su propio `try`. Si se cae —una medición de layout, un
+tween— la animación se pierde pero **la revelación no**: el texto ya se pidió y es
+lo que la persona vino a buscar. Perder el rito es un mal día; perder el texto es
+perder el producto.
+
+Y todo el flujo tiene un `finally` que libera el botón. Sin eso, una excepción a
+mitad de camino dejaba a la persona atrapada en la ceremonia para siempre, sin
+más salida que recargar.
+
 ### El bloqueo diario
 
 Dos entradas separadas en `localStorage`, y esa separación es toda la lógica:
@@ -448,8 +489,23 @@ Sin ninguno de los dos el sitio funciona igual, con los textos de respaldo. Con
 la clave pero sin KV también funciona — solo que genera en cada visita en vez de
 reutilizar el texto del día.
 
-`GET /api/health` informa si ambos están presentes —solo presencia, jamás el
-valor— y es la primera URL que conviene abrir después de un despliegue.
+### Comprobar que quedó bien
+
+| URL | Qué hace |
+| --- | -------- |
+| `/api/health` | Presencia. No sale a la red: dice si el secreto y el binding existen (nunca su valor). |
+| `/api/health?probe=1` | **Validez.** Prueba la clave contra NVIDIA de verdad. |
+
+El segundo modo existe porque **presencia y validez no son lo mismo**, y esa
+diferencia es justo donde se pierde media tarde: la variable puede estar cargada
+y la clave ser inválida, estar cortada al pegarla, o el modelo puede no estar
+habilitado en esa cuenta. Un diagnóstico que solo dice "la variable existe"
+tranquiliza sin informar.
+
+El probe consulta el listado de modelos, que no consume tokens, y devuelve un
+`veredicto` en castellano. Si el identificador de modelo no aparece en la cuenta,
+lista los GLM que sí están disponibles — porque a esa altura el error más probable
+es un identificador equivocado, no la clave.
 
 ---
 

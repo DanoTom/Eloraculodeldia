@@ -31,9 +31,7 @@ import { ORACLE_NUMBERS } from '../../public/js/core/numerology.js';
 import { ARCHETYPES } from '../../public/js/core/archetypes.js';
 import { BANNED_WORDS, fallbackFor, validateRevelation } from '../../public/js/core/fallbacks.js';
 import { json } from '../lib/respond.js';
-
-const NIM_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
-const MODEL = 'z-ai/glm-5.2';
+import { MODEL, NIM_CHAT_URL } from '../lib/nim.js';
 
 /** Tres días: la misma fecha local sigue viva ~50 h por husos horarios. */
 const CACHE_TTL_SECONDS = 259200;
@@ -143,7 +141,7 @@ function readNumbers(body) {
 /* ------------------------------------------------------------------ */
 
 async function generate(env, number, dateKey) {
-  const response = await fetch(NIM_URL, {
+  const response = await fetch(NIM_CHAT_URL, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${env.NVIDIA_API_KEY}`,

@@ -16,7 +16,7 @@
 import { gsap } from './lib/gsap.js';
 
 import { ARCHETYPES } from './core/archetypes.js';
-import { castOracle, dayNumber } from './core/numerology.js';
+import { castOracle, dayNumber, normalizeName } from './core/numerology.js';
 import {
   OracleInputError,
   formatShortDate,
@@ -96,13 +96,26 @@ let busy = false;
 /* Pantallas                                                           */
 /* ------------------------------------------------------------------ */
 
-function showScreen(name, { animate = true } = {}) {
+/**
+ * @param {object} [options]
+ * @param {boolean} [options.animate=true]
+ * @param {boolean} [options.focus=animate]  mover el foco a la pantalla nueva.
+ *   Por defecto solo en las transiciones: robarle el foco a alguien que recién
+ *   abrió la página es agresivo, pero NO moverlo al cambiar de pantalla deja a
+ *   quien navega con teclado o lector de pantalla parado sobre un botón que
+ *   acaba de desaparecer.
+ */
+function showScreen(name, { animate = true, focus = animate } = {}) {
   for (const [key, node] of Object.entries(screens)) {
     if (key !== name) node.hidden = true;
   }
 
   const target = screens[name];
   target.hidden = false;
+
+  // `preventScroll` porque el desplazamiento lo maneja cada pantalla por su
+  // cuenta (la revelación baja sola hasta el gesto de cierre).
+  if (focus) target.focus({ preventScroll: true });
 
   if (scene && FRAMING[name]) {
     const { opacity, halo, offsetY, scale } = FRAMING[name];
@@ -172,6 +185,26 @@ function prefillFromIdentity() {
   daySelect.value = String(day);
   monthSelect.value = String(month);
   yearSelect.value = String(year);
+  updateNameHint();
+}
+
+const NAME_HINT = 'Solo el primero, sin apellido.';
+
+/**
+ * Dice en voz alta qué va a leer el oráculo.
+ *
+ * La tabla pitagórica solo conoce A-Z, así que "Ana María" se suma como
+ * ANAMARIA: el espacio no separa nada. Callarlo sería dejar que alguien crea que
+ * el apellido cuenta, o que el segundo nombre no. Se avisa solo cuando de verdad
+ * se descartó algo de adentro del nombre — los espacios de los extremos no le
+ * importan a nadie.
+ */
+function updateNameHint() {
+  const raw = nameInput.value.trim();
+  const read = normalizeName(raw);
+  const dropped = [...raw].some((char) => normalizeName(char) === '');
+
+  $('name-hint').textContent = dropped && read ? `Se leerá como ${read}.` : NAME_HINT;
 }
 
 function showError(message) {
@@ -327,43 +360,15 @@ function paintTrace(consultation) {
 /* El camino principal                                                 */
 /* ------------------------------------------------------------------ */
 
-async function consult({ name, birthDate }) {
-  if (busy) return;
-  busy = true;
-  submitButton.disabled = true;
-
-  let cast;
-  try {
-    cast = castOracle({ name, birthDate });
-  } catch (error) {
-    // Solo puede pasar si algo se coló entre la validación y acá.
-    showError(error instanceof OracleInputError ? error.message : 'Algo salió mal con esos datos.');
-    busy = false;
-    submitButton.disabled = false;
-    return;
-  }
-
-  logCast(cast);
-  saveIdentity({ name, birthDate });
-
-  // La IA arranca YA, en paralelo con la ceremonia. Nadie la espera.
-  const revelationPromise = fetchRevelation({
-    numbers: {
-      expression: cast.expression.number,
-      lifeMission: cast.lifeMission.number,
-      day: cast.day.number,
-      personal: cast.personal.number,
-    },
-    dateKey: cast.dateKey,
-  });
-
-  // Marca si el texto ya llegó, sin esperarlo: hace falta más abajo para saber
-  // si la ceremonia terminó antes que la IA.
-  let textPending = true;
-  revelationPromise.then(() => {
-    textPending = false;
-  });
-
+/**
+ * La ceremonia: la parte decorativa.
+ *
+ * Va aislada a propósito. Si algo se rompe acá —una medición de layout, un
+ * tween— la animación se pierde, pero la revelación NO: el texto ya se pidió y
+ * es lo que la persona vino a buscar. Perder el rito es un mal día; perder el
+ * texto es perder el producto.
+ */
+async function performCeremony(cast, isTextPending) {
   showScreen('ceremony');
 
   // La ceremonia mide posiciones con getBoundingClientRect, así que hay que
@@ -391,33 +396,95 @@ async function consult({ name, birthDate }) {
   // a quien lo apriete esperando adelantar la espera del texto.
   skipButton.hidden = true;
 
-  if (textPending) ceremony.hold();
-  const revelation = await revelationPromise;
-  ceremony.release();
+  if (isTextPending()) ceremony.hold();
+}
 
-  saveConsultation({
-    dateKey: cast.dateKey,
-    name: cast.input.name,
-    birthDate: cast.input.birthDate,
-    number: cast.personal.number,
-    numbers: {
-      expression: cast.expression.number,
-      lifeMission: cast.lifeMission.number,
-      day: cast.day.number,
-      personal: cast.personal.number,
-    },
-    revelation: revelation.text,
-    source: revelation.source,
-  });
-
+/** Pinta y revela el texto. Esto tiene que pasar con ceremonia o sin ella. */
+async function presentRevelation(cast, revelation) {
   const body = paintRevelation({ name: cast.input.name, number: cast.personal.number });
 
   showScreen('revelation');
-  ceremony.destroy();
-  await revealText(body, revelation.text);
+  ceremony?.destroy();
+  ceremony = null;
 
+  await revealText(body, revelation.text);
   armSeal(cast.personal.number);
-  busy = false;
+}
+
+async function consult({ name, birthDate }) {
+  if (busy) return;
+  busy = true;
+  submitButton.disabled = true;
+
+  try {
+    let cast;
+    try {
+      cast = castOracle({ name, birthDate });
+    } catch (error) {
+      // Solo puede pasar si algo se coló entre la validación y acá.
+      showError(error instanceof OracleInputError ? error.message : 'Algo salió mal con esos datos.');
+      return;
+    }
+
+    logCast(cast);
+    saveIdentity({ name, birthDate });
+
+    // La IA arranca YA, en paralelo con la ceremonia. Nadie la espera.
+    const revelationPromise = fetchRevelation({
+      numbers: {
+        expression: cast.expression.number,
+        lifeMission: cast.lifeMission.number,
+        day: cast.day.number,
+        personal: cast.personal.number,
+      },
+      dateKey: cast.dateKey,
+    });
+
+    // Marca si el texto ya llegó, sin esperarlo: hace falta para saber si la
+    // ceremonia terminó antes que la IA.
+    let textPending = true;
+    revelationPromise.then(() => {
+      textPending = false;
+    });
+
+    try {
+      await performCeremony(cast, () => textPending);
+    } catch (error) {
+      console.error('[oráculo] la ceremonia se rompió; se va derecho a la revelación:', error);
+    }
+
+    // `fetchRevelation` por contrato nunca falla: o trae texto de la IA o trae
+    // el de respaldo. Así que a partir de acá siempre hay algo que mostrar.
+    const revelation = await revelationPromise;
+    ceremony?.release();
+
+    saveConsultation({
+      dateKey: cast.dateKey,
+      name: cast.input.name,
+      birthDate: cast.input.birthDate,
+      number: cast.personal.number,
+      numbers: {
+        expression: cast.expression.number,
+        lifeMission: cast.lifeMission.number,
+        day: cast.day.number,
+        personal: cast.personal.number,
+      },
+      revelation: revelation.text,
+      source: revelation.source,
+    });
+
+    await presentRevelation(cast, revelation);
+  } catch (error) {
+    // Última red. Sin esto, una excepción acá dejaba a la persona atrapada en la
+    // pantalla de la ceremonia para siempre: `busy` quedaba en true y el botón
+    // deshabilitado, sin ninguna salida que no fuera recargar.
+    console.error('[oráculo] la consulta falló:', error);
+    showError('El velo se trabó. Recarga la página e intenta de nuevo.');
+    showScreen('gate');
+  } finally {
+    busy = false;
+    submitButton.disabled = false;
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -432,6 +499,7 @@ function wireEvents() {
   });
 
   $('skip').addEventListener('click', () => ceremony?.skip());
+  nameInput.addEventListener('input', updateNameHint);
 }
 
 /**
