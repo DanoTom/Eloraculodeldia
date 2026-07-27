@@ -3,8 +3,8 @@
  *
  * Sin dependencias, sin estado, sin efectos secundarios: entra un nombre y una
  * fecha, sale un objeto con todos los números y su rastro de reducción.
- * ESM puro: se importa igual desde el navegador, desde una Pages Function y
- * desde Node (los tests).
+ * ESM puro: se importa igual desde el navegador, desde el Worker y desde Node
+ * (los tests).
  *
  * Los cuatro números:
  *   1. Expresión         — las letras del nombre.

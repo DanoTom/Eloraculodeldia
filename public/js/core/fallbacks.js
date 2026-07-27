@@ -5,8 +5,8 @@
  * no pasa la validación de voz. El oráculo NUNCA muestra un error: muestra
  * esto, y el usuario no tiene por qué enterarse de la diferencia.
  *
- * Este archivo lo comparten el navegador y la Pages Function, así que vive en
- * core/ y no en functions/.
+ * Este archivo lo comparten el navegador y el Worker, así que vive en core/:
+ * el backend lo importa desde acá en vez de tener su propia copia.
  *
  * Reglas de escritura, las mismas que se le exigen al modelo:
  *   · Entre 80 y 150 palabras.

@@ -17,8 +17,8 @@ breve. Una sola vez por día, y hasta que el sol vuelva a nacer.
 ```bash
 npm install     # instala dependencias y vendoriza three/gsap/tipografías
 npm test        # 157 aserciones sobre el núcleo y los textos
-npm run dev     # http://localhost:8788  (wrangler: incluye /functions)
-npm run serve   # http://localhost:4321  (estático; /api/* no responde)
+npm run dev     # http://localhost:8788  (Worker completo: estáticos + /api)
+npm run serve   # http://localhost:4321  (solo estáticos; /api/* no responde)
 ```
 
 Para probar el flujo completo hace falta `npm run dev`: `npm run serve` no
@@ -53,14 +53,19 @@ Parámetros del laboratorio:
 
 ```
 .
-├── functions/                 Cloudflare Pages Functions (el backend)
-│   └── api/
-│       ├── revelation.js      POST — GLM-5.2 + caché en KV + respaldo
-│       └── health.js          GET  — verifica bindings y secretos
+├── wrangler.jsonc             configuración del Worker (nombre, assets, KV)
+│
+├── src/                       el backend — corre en el Worker
+│   ├── worker.js              punto de entrada: enruta /api/*, delega el resto
+│   ├── api/
+│   │   ├── revelation.js      POST — GLM-5.2 + caché en KV + respaldo
+│   │   └── health.js          GET  — verifica bindings y secretos
+│   └── lib/respond.js         respuestas JSON con las cabeceras correctas
 │
 ├── public/                    ← esto es exactamente lo que se despliega
 │   ├── index.html             el oráculo (las cuatro pantallas)
 │   ├── lab.html               laboratorio visual
+│   ├── 404.html               esa puerta no existe
 │   ├── favicon.svg
 │   ├── _headers               caché y cabeceras de seguridad
 │   │
@@ -98,8 +103,9 @@ Parámetros del laboratorio:
 ```
 
 `core/` no sabe que existe el navegador y `app/` no sabe que existe three.js.
-Por eso la Pages Function puede importar `fallbacks.js` y `numerology.js` tal
-cual, sin duplicar una línea: son los mismos archivos que sirve el sitio.
+Por eso el Worker importa `fallbacks.js` y `numerology.js` tal cual desde
+`public/js/core/`, sin duplicar una línea: son exactamente los mismos archivos
+que sirve el sitio.
 
 ### Sobre `public/vendor/`
 
@@ -283,36 +289,55 @@ accesibilidad, no rendimiento, así que se respeta aunque la máquina sobre.
 
 ---
 
-## Despliegue en Cloudflare Pages
+## Despliegue en Cloudflare Workers
 
-Conectar el repo de GitHub y configurar:
+El proyecto se despliega como un **Worker con Static Assets**, no como un
+proyecto de Pages. Cloudflare puso Pages en modo mantenimiento y el flujo de
+"Import a repository" del panel ya crea Workers; este repo está armado para eso.
 
-| Ajuste                    | Valor           |
-| ------------------------- | --------------- |
-| Build command             | `npm run vendor` |
-| Build output directory    | `public`        |
-| Root directory            | *(la raíz)*     |
+Ajustes en Workers Builds (Settings → Build):
+
+| Ajuste          | Valor               |
+| --------------- | ------------------- |
+| Build command   | `npm run vendor`    |
+| Deploy command  | `npx wrangler deploy` |
+| Root directory  | `/`                 |
 
 > **El build command no es opcional.** `public/vendor/` no está versionado; si el
 > build no corre, three.js, GSAP y las tipografías dan 404.
 
-`/functions` en la raíz lo detecta Pages solo: cada archivo es una ruta y el
-runtime son V8 isolates con `fetch`/`Request`/`Response` estándar — no hay
-Express, ni servidor, ni `listen`.
+Todo lo demás sale de `wrangler.jsonc`. Dos cosas de ahí que importan:
 
-Para que el texto lo escriba GLM-5.2 hacen falta dos cosas más en el panel:
+- **`name` tiene que coincidir exactamente con el Worker del panel.** Si no
+  coincide, `wrangler deploy` crea un Worker nuevo en vez de actualizar el que
+  ya existe, y el sitio sigue sin aparecer en la URL que estás mirando.
+- **`run_worker_first: ["/api/*"]`** garantiza que el backend reciba esas rutas
+  sin depender de que el enrutador de assets falle primero. El orden entre
+  assets y Worker es justo el tipo de detalle que cambia entre versiones y
+  rompe en producción, no en local.
 
-- **Variable de entorno secreta** `NVIDIA_API_KEY` (Settings → Environment
-  variables → *Encrypt*). Nunca en el código.
-- **Binding de KV** llamado `REVELATIONS` (Settings → Functions → KV namespace
-  bindings).
+Cloudflare sirve `public/` desde su red sin invocar el Worker; `src/worker.js`
+solo corre para `/api/*`. Es el mismo runtime que usaban las Pages Functions
+—V8 isolates, `fetch`/`Request`/`Response` estándar—: no hay Express, ni
+servidor, ni `listen`.
 
-Sin ninguna de las dos el sitio funciona igual: sale el texto de respaldo. Sin KV
-pero con clave, también funciona — solo que genera en cada visita en vez de
-reutilizar.
+### Los dos bindings
+
+| Qué                | Dónde va                                        | Por qué ahí |
+| ------------------ | ----------------------------------------------- | ----------- |
+| `NVIDIA_API_KEY`   | Panel → Settings → Variables and Secrets, tipo **Secret** | Los secretos se guardan aparte y sobreviven a los despliegues. |
+| KV `REVELATIONS`   | `wrangler.jsonc` → `kv_namespaces`              | Con despliegues automáticos, `wrangler deploy` toma el archivo como la verdad y **pisa los bindings agregados a mano en el panel**. |
+
+Esa asimetría es la trampa del despliegue continuo en Workers y vale la pena
+tenerla presente: un binding configurado por el dashboard desaparece en el
+siguiente push.
+
+Sin ninguno de los dos el sitio funciona igual, con los textos de respaldo. Con
+la clave pero sin KV también funciona — solo que genera en cada visita en vez de
+reutilizar el texto del día.
 
 `GET /api/health` informa si ambos están presentes —solo presencia, jamás el
-valor— y sirve para verificar de una mirada que quedó bien cableado.
+valor— y es la primera URL que conviene abrir después de un despliegue.
 
 ---
 
@@ -341,7 +366,7 @@ cura solo.
 
 ### La voz
 
-El prompt de sistema vive en `functions/api/revelation.js` y la materia prima en
+El prompt de sistema vive en `src/api/revelation.js` y la materia prima en
 `core/archetypes.js`: cada número lleva `motifs` (imágenes concretas para la
 metáfora) y una `tension` — una contradicción interna, no una virtud. Eso último
 es lo que evita que la revelación suene a cumplido.

@@ -1,0 +1,53 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+
+  // Tiene que coincidir EXACTAMENTE con el nombre del Worker en el panel de
+  // Cloudflare. Si no coincide, `wrangler deploy` crea un Worker nuevo en vez de
+  // actualizar el que ya existe.
+  "name": "oraculodeldia",
+
+  "main": "src/worker.js",
+  "compatibility_date": "2025-06-01",
+
+  /**
+   * Static Assets: Cloudflare sirve todo lo que hay en public/ desde su red,
+   * sin invocar al Worker. El Worker solo corre para lo que no es un archivo.
+   *
+   * `run_worker_first` fuerza a que /api/* llegue siempre al Worker, sin
+   * depender de que el enrutador de assets falle primero. Es explícito a
+   * propósito: el orden entre assets y Worker es justo el tipo de detalle que
+   * cambia entre versiones y rompe en producción, no en local.
+   */
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"]
+  },
+
+  "observability": {
+    "enabled": true
+  }
+
+  /**
+   * ── CACHÉ DE REVELACIONES (opcional) ──────────────────────────────────────
+   *
+   * Sin esto el sitio funciona igual, solo que genera un texto por visita en
+   * vez de reutilizar el del día.
+   *
+   * En el panel: Storage & Databases → KV → Create namespace (por ejemplo
+   * "oraculo-revelaciones"). Copiá el ID que te da y descomentá esto:
+   *
+   * "kv_namespaces": [
+   *   { "binding": "REVELATIONS", "id": "PEGAR_ACÁ_EL_ID" }
+   * ]
+   *
+   * El binding va SÍ O SÍ en este archivo y no en el panel: con despliegues
+   * automáticos, `wrangler deploy` toma esta configuración como la verdad y
+   * pisa los bindings agregados a mano desde el dashboard.
+   *
+   * La clave NVIDIA_API_KEY es distinta: los secretos se guardan aparte y
+   * sobreviven a los despliegues, así que esa sí va por el panel
+   * (Settings → Variables and Secrets → tipo Secret).
+   */
+}

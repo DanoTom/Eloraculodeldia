@@ -1,5 +1,5 @@
 /**
- * functions/api/revelation.js  →  POST /api/revelation
+ * revelation.js  →  POST /api/revelation
  *
  * Genera la revelación del día con GLM-5.2 (NVIDIA NIM) y la cachea en Workers KV.
  *
@@ -30,6 +30,7 @@
 import { ORACLE_NUMBERS } from '../../public/js/core/numerology.js';
 import { ARCHETYPES } from '../../public/js/core/archetypes.js';
 import { BANNED_WORDS, fallbackFor, validateRevelation } from '../../public/js/core/fallbacks.js';
+import { json } from '../lib/respond.js';
 
 const NIM_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const MODEL = 'z-ai/glm-5.2';
@@ -84,16 +85,6 @@ function buildUserPrompt(number, dateKey) {
 /* ------------------------------------------------------------------ */
 /* Utilidades                                                          */
 /* ------------------------------------------------------------------ */
-
-const json = (body, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      // La respuesta depende del día: que no la congele ningún intermediario.
-      'cache-control': 'no-store',
-    },
-  });
 
 /**
  * Limpia lo que devuelve el modelo.
@@ -191,9 +182,7 @@ async function generate(env, number, dateKey) {
 /* Handler                                                             */
 /* ------------------------------------------------------------------ */
 
-export async function onRequestPost(context) {
-  const { request, env, waitUntil } = context;
-
+export async function handleRevelation(request, env, ctx) {
   let body;
   try {
     body = await request.json();
@@ -241,7 +230,7 @@ export async function onRequestPost(context) {
     if (kv) {
       // `waitUntil` deja que la escritura termine después de contestar: el
       // usuario no espera a KV para leer su revelación.
-      waitUntil(
+      ctx.waitUntil(
         kv
           .put(cacheKey, text, { expirationTtl: CACHE_TTL_SECONDS })
           .catch((error) => console.warn(`KV no disponible para escribir: ${error.message}`)),

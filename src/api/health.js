@@ -1,25 +1,22 @@
 /**
- * functions/api/health.js  →  GET /api/health
+ * health.js  →  GET /api/health
  *
- * Cloudflare Pages Functions: cada archivo bajo /functions es una ruta, y el
- * nombre del archivo es el path. No hay Express, ni servidor, ni `listen`: el
- * runtime son V8 isolates y el contrato es fetch/Request/Response estándar.
- *
- * Este endpoint existe para verificar tres cosas de una sola mirada, antes de
- * que haya lógica real que depurar:
- *   1. que el directorio /functions esté bien cableado al proyecto de Pages,
+ * Verifica tres cosas de una sola mirada:
+ *   1. que el Worker esté desplegado y respondiendo,
  *   2. que la variable secreta NVIDIA_API_KEY esté cargada en el entorno
  *      (informa si está o no; JAMÁS su valor),
  *   3. que el binding de Workers KV para el caché de revelaciones exista.
  *
- * La llamada real a GLM-5.2 vivirá en /functions/api/revelation.js.
+ * Es la primera URL que hay que abrir después de un despliegue.
  */
 
-export async function onRequestGet({ env, request }) {
-  const body = {
+import { json } from '../lib/respond.js';
+
+export async function handleHealth(request, env) {
+  return json({
     service: 'el-oraculo-del-dia',
     status: 'ok',
-    runtime: 'cloudflare-pages-functions',
+    runtime: 'cloudflare-workers',
     now: new Date().toISOString(),
     // Zona horaria del centro de datos que atendió: siempre UTC en Workers.
     // Queda anotado porque el bloqueo diario se resuelve en el navegador, con
@@ -32,12 +29,5 @@ export async function onRequestGet({ env, request }) {
       REVELATIONS_KV: Boolean(env.REVELATIONS),
     },
     colo: request.headers.get('cf-ray')?.split('-')[1] ?? null,
-  };
-
-  return new Response(JSON.stringify(body, null, 2), {
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
-    },
   });
 }

@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Revelación numerológica diaria — Cloudflare Pages + Pages Functions",
+  "description": "Revelación numerológica diaria — Cloudflare Workers + Static Assets",
   "scripts": {
     "vendor": "node scripts/vendor.mjs",
     "postinstall": "node scripts/vendor.mjs",
     "test": "node scripts/run-tests.mjs",
-    "dev": "wrangler pages dev public --compatibility-date=2025-01-01",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
     "serve": "node scripts/serve.mjs"
   },
   "dependencies": {
