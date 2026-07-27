@@ -4,49 +4,66 @@
  * Única fuente de verdad de color, tipografía, ritmo y tiempos. Ninguna hoja
  * posterior debería escribir un hex ni un px a mano.
  *
- * La paleta parte de tres decisiones:
- *   · El negro no es #000: es #05040a, un negro con una gota de violeta. En
+ * La paleta viene de la ilustración de referencia —figura encapuchada con
+ * máscara de estrellas en un jardín— y de ahí salen cuatro decisiones:
+ *
+ *   · El negro no es #000: es #05080b, un negro con un matiz azul verdoso. En
  *     pantalla OLED el negro puro se lee como un agujero apagado; este respira.
- *   · El dorado es envejecido, no metálico brillante: latón y pergamino, no oro
- *     de casino.
- *   · El violeta aparece en dosis mínimas. Es la sombra de la paleta, nunca el
- *     protagonista; en cuanto compite con el dorado, la cosa se vuelve póster
- *     de feria esotérica.
+ *   · La sombra de la paleta es VERDE PROFUNDO, no violeta. El violeta es el
+ *     atajo de cualquier producto esotérico; el verde teal del jardín es lo que
+ *     hace que esto no se parezca a los demás.
+ *   · El dorado es envejecido: latón y pan de oro, no oro de casino.
+ *   · El texto no es blanco, es CREMA PERGAMINO. Un blanco frío sobre negro se
+ *     ve digital; el marfil de la máscara se ve impreso.
+ *
+ * El ámbar es el único color saturado y aparece solo en advertencias.
  */
 
 :root {
   color-scheme: dark;
 
   /* ---- Fondos ---- */
-  --ink: #05040a;
-  --ink-raised: #0b0913;
-  --ink-panel: #100d1a;
-  --ink-line: #1d1830;
+  --ink: #05080b;
+  --ink-raised: #0a1013;
+  --ink-panel: #0e161a;
+  --ink-line: #1c2b2e;
 
   /* ---- Dorado envejecido ---- */
   --gold-deep: #8a6f22;
   --gold: #c9a227;
-  --gold-soft: #e3bd6b;
-  --gold-pale: #f4e2b0;
+  --gold-soft: #dfbc6d;
+  --gold-pale: #f2e2b4;
 
-  /* ---- Violeta (sombra, no acento principal) ---- */
-  --violet-deep: #1a1130;
-  --violet: #2a1b4d;
-  --violet-soft: #6b4fa8;
+  /* ---- Verde profundo: la sombra de la paleta ---- */
+  --green-deep: #0b1a18;
+  --green: #13302c;
+  --green-soft: #2f6157;
 
-  /* ---- Texto ---- */
-  --text: #ece7dd;
-  --text-muted: #a49bb0;
-  --text-faint: #6f6880;
+  /* ---- Texto, en crema pergamino ---- */
+  --text: #ecdfc8;
+  --text-muted: #b0a68f;
+  /* 5.16:1 sobre --ink. El violeta gris de antes quedaba en 3.5:1, o sea que no
+     llegaba a AA para texto normal. */
+  --text-faint: #8a8070;
 
   /* ---- Estados ---- */
   --ok: #9ad6a0;
-  --warn: #e5b98b;
+  --warn: #e08a2e;
   --error: #e58b8b;
 
   /* ---- Tipografía ---- */
   --font-serif: 'Cormorant Garamond', 'EB Garamond', Georgia, 'Times New Roman', serif;
   --font-sans: 'Jost', 'Futura', 'Century Gothic', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /**
+   * Display — solo números grandes y titulares. NUNCA texto corrido: es una
+   * tipografía de contraste extremo y a cuerpo de lectura se deshace.
+   *
+   * Italiana es el reemplazo libre de Luna Negra (TAN Type Co), que es
+   * comercial. Para cambiarla: vendorizar la fuente y agregarla al principio de
+   * esta lista. Es el único lugar que hay que tocar.
+   */
+  --font-display: 'Italiana', 'Cormorant Garamond', Georgia, serif;
 
   /* Escala fluida: un solo valor sirve de móvil a escritorio. */
   --step--2: clamp(0.69rem, 0.67rem + 0.11vw, 0.76rem);

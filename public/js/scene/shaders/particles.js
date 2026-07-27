@@ -86,8 +86,8 @@ export const PARTICLE_FRAGMENT = /* glsl */ `
     float alpha = pow(core, 2.4);
     if (alpha < 0.004) discard;
 
-    // Casi todas las partículas son doradas; el violeta aparece apenas, en las
-    // de tono alto, para que la paleta tenga profundidad sin volverse fría.
+    // Casi todas las partículas son doradas; el verde teal aparece apenas, en
+    // las de tono alto, para dar profundidad sin enfriar la paleta.
     vec3 color = mix(uColorWarm, uColorCool, smoothstep(0.62, 1.0, vTone));
 
     gl_FragColor = vec4(color, alpha * vAlpha * uOpacity);

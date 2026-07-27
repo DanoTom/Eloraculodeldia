@@ -283,6 +283,7 @@
 }
 
 .glyph__face--value {
+  font-family: var(--font-display);
   color: var(--gold-soft);
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 28px color-mix(in srgb, var(--gold) 55%, transparent);
@@ -303,7 +304,7 @@
 }
 
 .token__number {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: var(--step-4);
   line-height: 1;
   color: var(--gold-soft);
@@ -319,10 +320,17 @@
   white-space: nowrap;
 }
 
+/**
+ * Los números van en la display, no en el serif de texto.
+ *
+ * No es solo carácter: Cormorant usa cifras de estilo antiguo —el 3, 4, 5, 7 y
+ * 9 bajan de la línea base— y un número enorme y solo en pantalla se ve
+ * inconsistente. La display trae cifras de caja alta, todas de la misma altura.
+ */
 .ceremony__sum,
 .ceremony__final {
-  font-family: var(--font-serif);
-  font-weight: 300;
+  font-family: var(--font-display);
+  font-weight: 400;
   line-height: 1;
   color: var(--gold-soft);
   font-variant-numeric: tabular-nums;
@@ -394,7 +402,7 @@
 }
 
 .revelation__number {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: var(--step-4);
   line-height: 1;
   color: var(--gold-soft);
@@ -552,9 +560,9 @@
  * así que se comporta como el protagonista y no como un dato al margen.
  */
 .locked__number {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(4rem, 18vw, 7rem);
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1;
   color: var(--gold-pale);
   font-variant-numeric: tabular-nums;
@@ -597,6 +605,14 @@
   margin-block-start: var(--space-s);
 }
 
+/**
+ * La cuenta regresiva NO va en la display.
+ *
+ * Italiana no tiene set de cifras tabulares —`tabular-nums` no le hace nada y
+ * sus dígitos van de 35 a 65 unidades de ancho—, así que un contador que cambia
+ * cada segundo saltaría de izquierda a derecha todo el tiempo. Jost sí las
+ * tiene: con tabular-nums, sus diez dígitos miden exactamente lo mismo.
+ */
 .locked__countdown {
   font-family: var(--font-sans);
   font-size: var(--step-2);

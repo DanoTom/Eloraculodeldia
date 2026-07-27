@@ -26,10 +26,11 @@ levanta el runtime de Workers, así que `/api/revelation` no existe y el
 navegador cae al respaldo local (que igual funciona, pero no ejercita el
 backend).
 
-| Página      | Para qué                                                            |
-| ----------- | ------------------------------------------------------------------- |
-| `/`         | El oráculo.                                                         |
-| `/lab.html` | Laboratorio visual: las 12 figuras, métricas en vivo y los tests.   |
+| Página       | Para qué                                                            |
+| ------------ | ------------------------------------------------------------------- |
+| `/`          | El oráculo.                                                         |
+| `/lab.html`  | Laboratorio visual: las 12 figuras, métricas en vivo y los tests.   |
+| `/type.html` | Espécimen: tipografías y paleta, para decidir mirando.              |
 
 Desde la consola del navegador:
 
@@ -45,7 +46,8 @@ Parámetros del laboratorio:
 - `?q=high\|medium\|low` — fuerza el nivel de calidad (así se pueden validar los
   tres perfiles, y el camino con bloom, desde una sola máquina).
 - `?test=1` — corre los tests al cargar.
-- `?debug=1` — vuelca todos los cálculos en la consola. Funciona en las dos páginas.
+
+`?q=high|medium|low` y `?debug=1` funcionan también en `/`.
 
 ---
 
@@ -65,6 +67,7 @@ Parámetros del laboratorio:
 ├── public/                    ← esto es exactamente lo que se despliega
 │   ├── index.html             el oráculo (las cuatro pantallas)
 │   ├── lab.html               laboratorio visual
+│   ├── type.html              espécimen de tipografía y paleta
 │   ├── 404.html               esa puerta no existe
 │   ├── favicon.svg
 │   ├── _headers               caché y cabeceras de seguridad
@@ -76,7 +79,8 @@ Parámetros del laboratorio:
 │   │   │   ├── storage.js       identidad y bloqueo diario en localStorage
 │   │   │   ├── api.js           cliente de /api/revelation (nunca falla)
 │   │   │   ├── ceremony.js      la descomposición del nombre
-│   │   │   └── reveal.js        el texto que aparece palabra por palabra
+│   │   │   ├── holdToClose.js   mantener presionado para cerrar el velo
+│   │   │   └── reveal.js        el texto que aparece y se disuelve
 │   │   │
 │   │   ├── core/              lógica pura, sin DOM ni three.js
 │   │   │   ├── numerology.js    los cuatro números
@@ -89,6 +93,7 @@ Parámetros del laboratorio:
 │   │   │   ├── OracleScene.js   orquesta renderer, cámara, bucle y calidad
 │   │   │   ├── ParticleField.js campo de partículas doradas
 │   │   │   ├── SacredGeometry.js las 12 figuras
+│   │   │   ├── StarHalo.js      el aro de estrellas alrededor de la figura
 │   │   │   ├── quality.js       perfiles de dispositivo y vigilante de fps
 │   │   │   └── shaders/
 │   │   │
@@ -112,7 +117,7 @@ que sirve el sitio.
 Está en `.gitignore` y lo genera `scripts/vendor.mjs` desde `node_modules` en
 cada `npm install` (hook `postinstall`). Copia el build ESM de three.js, la
 cadena mínima de post-proceso, el UMD de GSAP y los `.woff2` del subset latino de
-Cormorant Garamond y Jost.
+Cormorant Garamond, Jost e Italiana.
 
 **El sitio no hace ni una sola petición a un tercero.** Sin CDN, sin Google
 Fonts. Eso significa: una fuente menos de fallas, nada de latencia de terceros,
@@ -183,6 +188,70 @@ qué dibujar.
 También corre `validateRevelation()` sobre las doce revelaciones escritas a mano:
 si una regla que se le exige al modelo no la cumplen los textos propios, la que
 está mal es la regla.
+
+---
+
+## Look & feel
+
+La referencia es una ilustración de figura encapuchada con máscara de estrellas
+en un jardín, en registro de tapiz medieval. De ahí salen cuatro decisiones, y
+todas viven en `styles/tokens.css`.
+
+### La sombra es verde, no violeta
+
+El violeta es el atajo de cualquier producto esotérico. El teal profundo del
+jardín de la referencia es lo que hace que esto no se parezca a los demás. El
+negro tampoco es `#000`: es `#05080b`, con un matiz azul verdoso — en OLED el
+negro puro se lee como un agujero apagado.
+
+El texto no es blanco sino **crema pergamino** (`#ecdfc8`). Un blanco frío sobre
+negro se ve digital; el marfil de la máscara se ve impreso. De paso, `--text-faint`
+pasó de 3.5:1 a **5.16:1** de contraste: el gris violáceo anterior no llegaba a
+AA para texto normal.
+
+### Dos tipografías, y por qué
+
+| Rol | Tipografía | Dónde |
+| --- | ---------- | ----- |
+| `--font-display` | Italiana | Solo los números grandes |
+| `--font-serif` | Cormorant Garamond | La revelación, titulares, campos |
+| `--font-sans` | Jost | Interfaz, etiquetas, cuenta regresiva |
+
+La display **no** se usa para titulares ni para texto: es de contraste extremo y
+a cuerpo de lectura se deshace. Se decidió mirando `/type.html`, no de memoria, y
+salieron dos cosas que no se ven leyendo especificaciones:
+
+- **Cormorant usa cifras de estilo antiguo** — el 3, 4, 5, 7 y 9 bajan de la
+  línea base. Para un número enorme y solo en pantalla se ve inconsistente.
+  Italiana trae cifras de caja alta, todas de la misma altura.
+- **Italiana no tiene set tabular.** `font-variant-numeric: tabular-nums` no le
+  hace nada y sus dígitos van de 35 a 65 unidades de ancho, así que la cuenta
+  regresiva —que cambia cada segundo— saltaría de lado a lado. Por eso el
+  contador se queda en Jost, que sí las tiene.
+
+> **Italiana es el reemplazo libre de Luna Negra** (TAN Type Co), que es
+> comercial y no está en npm. Si se compra: vendorizar el archivo y ponerla al
+> principio de `--font-display`. Es el único lugar que hay que tocar.
+
+### El halo de estrellas
+
+`scene/StarHalo.js`. Es el elemento más reconocible de la referencia: un aro
+dorado con estrellas de cuatro puntas apoyadas encima, girando al revés que la
+figura. El contramovimiento es lo que hace que el centro se sienta suspendido en
+vez de simplemente rotando.
+
+El aro no es decoración: sin él las estrellas se leen como polvo suelto y no
+como una aureola. Y su opacidad va **desacoplada** de la figura, porque no
+siempre quieren lo mismo — en el clímax el halo es protagonista, y sobre un
+párrafo de cien palabras su aro cruza justo las líneas de texto y hay que
+bajarlo casi a cero.
+
+### La textura
+
+La referencia es témpera sobre lienzo. Sobre el grano fino que evita el banding
+va una segunda turbulencia con frecuencias muy distintas en X y en Y: eso sale
+hebra en vez de ruido y se lee como tejido. Las dos capas van bajísimas — se
+tienen que notar solo cuando se apagan.
 
 ---
 

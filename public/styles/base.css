@@ -91,12 +91,17 @@ a:hover {
 }
 
 /**
- * Viñeta + grano.
+ * Viñeta + textura.
  *
- * El grano es un feTurbulence embebido como data URI: cuesta un decode y cero
- * peticiones de red, y es lo que evita el banding en degradados oscuros tan
- * largos. Se mantiene bajísimo a propósito — se tiene que notar solo cuando se
- * lo apaga.
+ * Son dos capas apiladas, las dos con feTurbulence embebido como data URI:
+ * cuestan un decode y cero peticiones de red.
+ *
+ *   · grano fino  — evita el banding en degradados oscuros tan largos.
+ *   · trama gruesa — la referencia es témpera sobre lienzo, no un degradado
+ *                    digital. Una segunda turbulencia estirada en un eje imita
+ *                    el tejido y le saca al fondo esa lisura de pantalla.
+ *
+ * Las dos van bajísimas a propósito: se tienen que notar solo cuando se apagan.
  */
 .veil {
   position: fixed;
@@ -115,12 +120,22 @@ a:hover {
 .veil::before {
   background:
     radial-gradient(ellipse 70% 55% at 50% 45%, transparent 0%, color-mix(in srgb, var(--ink) 55%, transparent) 62%, var(--ink) 100%),
-    radial-gradient(ellipse 120% 80% at 50% 120%, color-mix(in srgb, var(--violet) 45%, transparent) 0%, transparent 60%);
+    radial-gradient(ellipse 120% 80% at 50% 120%, color-mix(in srgb, var(--green) 55%, transparent) 0%, transparent 60%);
 }
 
+/**
+ * Dos texturas en la misma capa, para no tener que agregar un div a cada HTML.
+ * Arriba el grano fino; abajo la trama de lienzo, que es la misma turbulencia
+ * con una frecuencia base muy distinta en X y en Y — así sale hebra en vez de
+ * ruido, y se lee como tejido.
+ */
 .veil::after {
-  opacity: 0.045;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+  opacity: 0.05;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='w'><feTurbulence type='fractalNoise' baseFrequency='0.02 0.55' numOctaves='2' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23w)'/></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='w2'><feTurbulence type='fractalNoise' baseFrequency='0.55 0.02' numOctaves='2' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23w2)'/></svg>");
+  background-blend-mode: overlay, overlay, normal;
 }
 
 .stage {
@@ -210,6 +225,6 @@ a:hover {
 /** Aviso cuando no hay WebGL: la escena desaparece, el contenido no. */
 .no-webgl .scene {
   background:
-    radial-gradient(ellipse 60% 50% at 50% 40%, var(--violet-deep) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 50% 40%, var(--green-deep) 0%, transparent 70%),
     var(--ink);
 }

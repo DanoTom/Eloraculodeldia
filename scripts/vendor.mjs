@@ -56,6 +56,8 @@ const FILES = [
  * ü ñ ¿ ¡) y solo los pesos que realmente usa la interfaz.
  */
 const FONTS = [
+  // Texto revelado: un Garamond, que es exactamente el registro de manuscrito
+  // renacentista de las referencias.
   {
     pkg: '@fontsource/cormorant-garamond',
     family: 'Cormorant Garamond',
@@ -63,7 +65,13 @@ const FONTS = [
     weights: [300, 400, 500],
     italics: [400],
   },
+  // Interfaz: sans geométrica.
   { pkg: '@fontsource/jost', family: 'Jost', slug: 'jost', weights: [300, 400, 500], italics: [] },
+  // Display: solo para los números grandes y los titulares. Contraste altísimo
+  // y capitales geométricas — es el reemplazo libre de Luna Negra (TAN Type Co),
+  // que es comercial. Si algún día se compra, se agrega acá y cambia
+  // --font-display en tokens.css. Un solo peso, sin cursiva.
+  { pkg: '@fontsource/italiana', family: 'Italiana', slug: 'italiana', weights: [400], italics: [] },
 ];
 
 /** Rango unicode del subset `latin` de Google Fonts. */

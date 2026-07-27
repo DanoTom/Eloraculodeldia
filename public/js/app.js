@@ -70,14 +70,16 @@ const submitButton = $('submit');
  * adueña de la pantalla. Es la escenografía moviéndose con el relato.
  */
 const FRAMING = {
-  gate: { opacity: 0.3, offsetY: 0.25, scale: 1.15 },
-  ceremony: { opacity: 0.16, offsetY: 0.1, scale: 1.3 },
-  climax: { opacity: 0.9, offsetY: 0.1, scale: 1.05 },
+  gate: { opacity: 0.3, halo: 0.45, offsetY: 0.25, scale: 1.15 },
+  ceremony: { opacity: 0.16, halo: 0.22, offsetY: 0.1, scale: 1.3 },
+  climax: { opacity: 0.9, halo: 1, offsetY: 0.1, scale: 1.05 },
   // La revelación es un texto largo: la figura baja a puro fondo. Correrla hacia
   // arriba no alcanzaba —ahí está el número y el arquetipo en versalitas, y las
   // líneas doradas los volvían ilegibles—, así que se queda centrada y tenue.
-  revelation: { opacity: 0.15, offsetY: 0, scale: 1.2 },
-  locked: { opacity: 0.5, offsetY: 0.3, scale: 0.95 },
+  // El halo baja todavía más: su aro cruza justo las líneas del párrafo.
+  revelation: { opacity: 0.15, halo: 0.1, offsetY: 0, scale: 1.2 },
+  // Cerrado el velo, el halo es lo único que queda vivo: pasa a protagonista.
+  locked: { opacity: 0.5, halo: 0.8, offsetY: 0.3, scale: 0.95 },
 };
 
 const MONTHS = [
@@ -103,8 +105,9 @@ function showScreen(name, { animate = true } = {}) {
   target.hidden = false;
 
   if (scene && FRAMING[name]) {
-    const { opacity, offsetY, scale } = FRAMING[name];
+    const { opacity, halo, offsetY, scale } = FRAMING[name];
     scene.setFigureOpacity(opacity, { duration: 1.2 });
+    scene.setHaloOpacity(halo, { duration: 1.2 });
     scene.setFraming({ offsetY, scale, duration: 1.2 });
   }
 
@@ -300,6 +303,7 @@ function armSeal(number) {
 
     // La figura crece y se aclara: lo que se apaga es el texto, no el número.
     scene?.setFigureOpacity(0.75, { duration: 1.4 });
+    scene?.setHaloOpacity(1, { duration: 1.4 });
 
     await dissolveText($('rev-body'));
     await new Promise((resolve) => gsap.to(seal, { opacity: 0, duration: 0.5, onComplete: resolve }));
@@ -375,8 +379,9 @@ async function consult({ name, birthDate }) {
   await ceremony.play(cast, {
     onPersonalNumber: (number) => {
       scene?.setFigure(number);
-      if (scene && FRAMING.climax) {
+      if (scene) {
         scene.setFigureOpacity(FRAMING.climax.opacity, { duration: 1.4 });
+        scene.setHaloOpacity(FRAMING.climax.halo, { duration: 1.4 });
         scene.setFraming({ ...FRAMING.climax, duration: 1.4 });
       }
     },
@@ -459,16 +464,22 @@ async function startScene(figure, state) {
 
   const framing = FRAMING[state] ?? FRAMING.gate;
 
+  // `?q=high|medium|low` fuerza el nivel de calidad. Es la única forma de ver el
+  // camino con bloom sin cambiar de máquina; en uso normal nadie lo pasa.
+  const forced = new URLSearchParams(location.search).get('q');
+
   const instance = new OracleScene($('scene'), {
     figure,
     figureOpacity: 0,
     figureOffsetY: framing.offsetY,
     figureScale: framing.scale,
+    quality: ['high', 'medium', 'low'].includes(forced) ? forced : undefined,
   });
 
   await instance.init();
   instance.start().reveal({ duration: 3 });
   instance.setFigureOpacity(framing.opacity, { duration: 2.4 });
+  instance.setHaloOpacity(framing.halo, { duration: 2.4 });
   return instance;
 }
 

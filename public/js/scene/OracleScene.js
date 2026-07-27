@@ -34,9 +34,11 @@ import {
 import { gsap } from '../lib/gsap.js';
 import { ParticleField } from './ParticleField.js';
 import { createSacredFigure } from './SacredGeometry.js';
+import { StarHalo } from './StarHalo.js';
 import { FrameGuard, TIERS, buildProfile, detectQuality, nextTierDown } from './quality.js';
 
-const BACKGROUND = '#05040a';
+/** Tiene que coincidir con --ink de tokens.css: el canvas y el CSS se tocan. */
+const BACKGROUND = '#05080b';
 
 /** ¿Hay WebGL en este navegador? Si no, la aplicación muestra su versión sobria. */
 export function isWebGLAvailable() {
@@ -118,6 +120,17 @@ export class OracleScene {
       swirl: 0.012 * this.profile.motionScale,
     });
     this.scene.add(this.particles.object3D);
+
+    // El halo de estrellas es independiente de la figura: la figura se destruye
+    // y se reconstruye en cada cambio de número, y el halo tiene que sobrevivir
+    // a eso sin parpadear.
+    this.halo = new StarHalo({
+      twinkle: this.profile.twinkle,
+      spin: 0.035 * this.profile.motionScale,
+      count: this.profile.tier === 'low' ? 22 : 34,
+    });
+    this.halo.setOffsetY(this.figureOffsetY);
+    this.scene.add(this.halo.object3D);
 
     this._onResize = () => this.resize();
     this._onVisibility = () => (document.hidden ? this.stop() : this.start());
@@ -212,6 +225,8 @@ export class OracleScene {
     }
 
     this.particles.setPixelRatio(this.profile.devicePixelRatio);
+    this.halo.setPixelRatio(this.profile.devicePixelRatio);
+    this.halo.setScale(this._figureScale());
     if (this.figure) {
       this.figure.setPixelRatio(this.profile.devicePixelRatio);
       this.figure.setScale(this._figureScale());
@@ -280,10 +295,24 @@ export class OracleScene {
     return this;
   }
 
+  /**
+   * Opacidad del halo, por separado de la figura.
+   *
+   * Van desacopladas porque no siempre quieren lo mismo: en el clímax el halo es
+   * protagonista, y sobre un párrafo de cien palabras el aro cruza justo las
+   * líneas de texto y hay que bajarlo casi a cero. Atarlo a la figura con un
+   * multiplicador fijo daba bien en una pantalla y mal en la otra.
+   */
+  setHaloOpacity(value, { duration = 1 } = {}) {
+    gsap.to(this.halo, { opacity: value, duration, ease: 'power2.inOut', overwrite: 'auto' });
+    return this;
+  }
+
   /** Reencuadra la figura (posición y tamaño) según lo que pida la pantalla. */
   setFraming({ offsetY, scale, duration = 1 } = {}) {
     if (typeof offsetY === 'number') {
       this.figureOffsetY = offsetY;
+      gsap.to(this.halo.object3D.position, { y: offsetY, duration, ease: 'power2.inOut' });
       if (this.figure) {
         gsap.to(this.figure.object3D.position, { y: offsetY, duration, ease: 'power2.inOut' });
       }
@@ -293,6 +322,13 @@ export class OracleScene {
       // Se anima `baseScale` y no la escala del objeto: el bucle de la figura
       // reescribe scale en cada cuadro para la respiración, así que cualquier
       // tween sobre object3D.scale lo pisaría al instante siguiente.
+      gsap.to(this.halo.object3D.scale, {
+        x: this._figureScale(),
+        y: this._figureScale(),
+        z: this._figureScale(),
+        duration,
+        ease: 'power2.inOut',
+      });
       if (this.figure) {
         gsap.to(this.figure, { baseScale: this._figureScale(), duration, ease: 'power2.inOut' });
       }
@@ -338,6 +374,7 @@ export class OracleScene {
     const elapsed = this._elapsed;
 
     this.particles.update(elapsed);
+    this.halo.update(elapsed, delta, this.profile.motionScale);
     if (this.figure) this.figure.update(elapsed, delta, this.profile.motionScale);
 
     // Deriva de cámara: automática, mínima, sin intervención del usuario.
@@ -396,6 +433,8 @@ export class OracleScene {
     this.canvas.removeEventListener('webglcontextrestored', this._onContextRestored);
 
     gsap.killTweensOf(this.particles);
+    gsap.killTweensOf(this.halo);
+    this.halo.dispose();
     if (this.figure) {
       gsap.killTweensOf(this.figure);
       this.figure.dispose();

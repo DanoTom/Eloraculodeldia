@@ -30,7 +30,7 @@ const DEFAULTS = {
   swirl: 0.012,
   twinkle: 1,
   warm: '#e8c56a', // dorado envejecido
-  cool: '#8f6fd4', // violeta, muy en minoría
+  cool: '#4f8f86', // verde teal, muy en minoría
   opacity: 0,      // arranca invisible; la aparición la maneja GSAP
 };
 
