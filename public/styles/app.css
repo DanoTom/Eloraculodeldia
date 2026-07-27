@@ -1,0 +1,506 @@
+/**
+ * app.css — Las cuatro pantallas del oráculo.
+ *
+ *   1. El umbral      — nombre y fecha de nacimiento.
+ *   2. La ceremonia   — el nombre se descompone en números.
+ *   3. La revelación  — el texto del día.
+ *   4. El velo cerrado — ya consultaste hoy.
+ *
+ * Solo una está visible a la vez (atributo `hidden`); las transiciones las
+ * maneja GSAP desde app.js. Acá vive el estado en reposo de cada una.
+ */
+
+.app {
+  padding: clamp(var(--space-m), 5vw, var(--space-xl)) clamp(var(--space-s), 5vw, var(--space-l));
+}
+
+.screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.screen[hidden] {
+  display: none;
+}
+
+.screen__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-s);
+  width: 100%;
+  max-width: 46ch;
+  text-align: center;
+}
+
+/**
+ * Velo de contraste bajo el contenido.
+ *
+ * Detrás hay líneas doradas en blending aditivo y partículas: sin este
+ * degradado, un párrafo largo compite con la figura y pierde. El texto va
+ * primero; la escena es atmósfera.
+ */
+.screen__inner::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 78% 62% at 50% 55%,
+    color-mix(in srgb, var(--ink) 82%, transparent) 0%,
+    color-mix(in srgb, var(--ink) 55%, transparent) 45%,
+    transparent 78%
+  );
+}
+
+/* ================================================================== */
+/* 1 · El umbral                                                       */
+/* ================================================================== */
+
+.gate__title {
+  font-size: var(--step-5);
+  letter-spacing: 0.015em;
+  /* Sin esto queda una última línea con una sola palabra colgando. */
+  text-wrap: balance;
+}
+
+.gate__title em {
+  font-style: italic;
+  color: var(--gold-soft);
+}
+
+.gate__lede {
+  font-family: var(--font-serif);
+  font-size: var(--step-1);
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--text) 80%, transparent);
+  text-wrap: pretty;
+}
+
+.gate__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+  width: 100%;
+  margin-block-start: var(--space-s);
+}
+
+.gate__note {
+  font-size: var(--step--2);
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  text-wrap: pretty;
+}
+
+/* ---- Campos ---- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  text-align: left;
+}
+
+.field__label {
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--step--2);
+  font-weight: 400;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.field__input,
+.field__select {
+  appearance: none;
+  width: 100%;
+  padding: 0.75em 0.9em;
+  border: 1px solid var(--ink-line);
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--ink-panel) 55%, transparent);
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: var(--step-1);
+  line-height: 1.3;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.field__input {
+  letter-spacing: 0.04em;
+}
+
+.field__input:hover,
+.field__select:hover {
+  border-color: color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
+.field__input:focus-visible,
+.field__select:focus-visible {
+  outline: none;
+  border-color: var(--gold-soft);
+  background: color-mix(in srgb, var(--ink-panel) 80%, transparent);
+}
+
+/**
+ * Los selects van un escalón más chicos que el campo de nombre: son tres en una
+ * fila y en un teléfono el año tiene que entrar entero. Con el cuerpo del campo
+ * de texto, "1980" quedaba cortado en "198".
+ *
+ * La flecha se dibuja acá porque `appearance: none` borra la nativa.
+ */
+.field__select {
+  font-size: var(--step-0);
+  padding-inline-end: 2em;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-faint) 50%),
+    linear-gradient(135deg, var(--text-faint) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.15em) center,
+    calc(100% - 0.75em) center;
+  background-size:
+    0.4em 0.4em,
+    0.4em 0.4em;
+  background-repeat: no-repeat;
+}
+
+/* El desplegable nativo se pinta con los colores del sistema: hay que forzarlo. */
+.field__select option {
+  background: var(--ink-panel);
+  color: var(--text);
+}
+
+/* El mes es la palabra más larga ("septiembre"); el año necesita cuatro dígitos
+   completos; el día se conforma con dos. De ahí las proporciones. */
+.date {
+  display: grid;
+  grid-template-columns: 0.8fr 1.45fr 1fr;
+  gap: var(--space-2xs);
+}
+
+.field__hint {
+  font-size: var(--step--2);
+  letter-spacing: 0.03em;
+  color: var(--text-faint);
+}
+
+.field__error {
+  min-height: 1.4em;
+  font-size: var(--step--1);
+  color: var(--error);
+  text-align: center;
+}
+
+.btn--major {
+  align-self: center;
+  padding: 0.9em 2.4em;
+  font-size: var(--step-0);
+  letter-spacing: 0.16em;
+}
+
+/* Botón de texto, sin caja: para acciones secundarias que no deben pesar. */
+.link-button {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: var(--space-2xs) var(--space-xs);
+  color: var(--text-faint);
+  font-family: var(--font-sans);
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.link-button:hover {
+  color: var(--gold-soft);
+}
+
+/* ================================================================== */
+/* 2 · La ceremonia                                                    */
+/* ================================================================== */
+
+.ceremony {
+  max-width: min(90vw, 60ch);
+  gap: var(--space-m);
+}
+
+/**
+ * Todos los actos ocupan la misma celda de la grilla y quedan centrados uno
+ * encima del otro. Así el número final aparece exactamente donde se fundieron
+ * las letras, sin que nada salte de posición al cambiar de acto.
+ */
+.ceremony__field {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: min(46svh, 22rem);
+  perspective: 900px;
+}
+
+.ceremony__field > * {
+  grid-area: 1 / 1;
+}
+
+.ceremony__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12em;
+  /* El tamaño se reparte entre las letras que haya: un nombre de doce entra
+     igual que uno de tres. `--glyph-count` lo escribe ceremony.js. */
+  font-size: clamp(1.25rem, calc(46vw / var(--glyph-count, 6)), 3.2rem);
+}
+
+.glyph {
+  display: grid;
+  place-items: center;
+  width: 1.05em;
+  height: 1.35em;
+  transform-style: preserve-3d;
+  font-family: var(--font-serif);
+  font-size: 1em;
+  line-height: 1;
+}
+
+.glyph__face {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+}
+
+.glyph__face--letter {
+  color: color-mix(in srgb, var(--text) 88%, transparent);
+}
+
+.glyph__face--value {
+  color: var(--gold-soft);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 28px color-mix(in srgb, var(--gold) 55%, transparent);
+}
+
+.ceremony__triad {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(var(--space-m), 8vw, var(--space-xl));
+}
+
+.token {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.token__number {
+  font-family: var(--font-serif);
+  font-size: var(--step-4);
+  line-height: 1;
+  color: var(--gold-soft);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 30px color-mix(in srgb, var(--gold) 45%, transparent);
+}
+
+.token__label {
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.ceremony__sum,
+.ceremony__final {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  line-height: 1;
+  color: var(--gold-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.ceremony__sum {
+  font-size: clamp(3rem, 12vw, 5rem);
+  text-shadow: 0 0 44px color-mix(in srgb, var(--gold) 50%, transparent);
+}
+
+.ceremony__final {
+  font-size: clamp(4.5rem, 22vw, 9rem);
+  color: var(--gold-pale);
+  text-shadow:
+    0 0 30px color-mix(in srgb, var(--gold) 70%, transparent),
+    0 0 90px color-mix(in srgb, var(--gold) 40%, transparent);
+}
+
+/* Los maestros llevan una marca extra: son la excepción de la regla. */
+.ceremony__final.is-master {
+  letter-spacing: -0.04em;
+}
+
+.ceremony__caption {
+  min-height: 1.6em;
+  font-family: var(--font-serif);
+  font-size: var(--step-0);
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+/* Espera: la línea late despacio. Es lo más parecido a un indicador de carga
+   que este producto se permite. */
+.ceremony__caption.is-waiting {
+  animation: breathe 2.4s var(--ease-in-out) infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ceremony__caption.is-waiting {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
+/* ================================================================== */
+/* 3 · La revelación                                                   */
+/* ================================================================== */
+
+.revelation {
+  max-width: 42ch;
+  gap: var(--space-m);
+}
+
+.revelation__mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.revelation__number {
+  font-family: var(--font-serif);
+  font-size: var(--step-4);
+  line-height: 1;
+  color: var(--gold-soft);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 36px color-mix(in srgb, var(--gold) 50%, transparent);
+}
+
+.revelation__archetype {
+  font-size: var(--step--2);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/**
+ * El saludo.
+ *
+ * Es la única parte personalizada, y vive solo acá: el cuerpo de la revelación
+ * se comparte entre todos los que hoy tienen este número, así que el nombre no
+ * puede estar adentro del texto. Nunca sale del navegador.
+ */
+.revelation__salutation {
+  font-family: var(--font-serif);
+  font-size: var(--step-2);
+  font-style: italic;
+  color: var(--text);
+}
+
+.revelation__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+  text-align: left;
+}
+
+.revelation__paragraph {
+  font-family: var(--font-serif);
+  font-size: var(--step-1);
+  font-weight: 300;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.revelation__word {
+  display: inline-block;
+  will-change: opacity, transform, filter;
+}
+
+.revelation__seal {
+  font-size: var(--step--2);
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  text-wrap: pretty;
+}
+
+/* ================================================================== */
+/* 4 · El velo cerrado                                                 */
+/* ================================================================== */
+
+.locked__title {
+  font-size: var(--step-4);
+  text-wrap: balance;
+}
+
+.locked__title em {
+  font-style: italic;
+  color: var(--gold-soft);
+}
+
+.locked__lede {
+  font-family: var(--font-serif);
+  font-size: var(--step-1);
+  font-style: italic;
+  color: color-mix(in srgb, var(--text) 78%, transparent);
+  text-wrap: pretty;
+}
+
+.locked__countdown {
+  font-family: var(--font-sans);
+  font-size: var(--step-2);
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  color: var(--gold-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ================================================================== */
+/* Entrada                                                             */
+/* ================================================================== */
+
+[data-enter] {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-enter] {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .revelation__paragraph {
+    font-size: var(--step-0);
+  }
+
+  .token__label {
+    font-size: 0.62rem;
+  }
+}

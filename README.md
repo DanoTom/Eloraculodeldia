@@ -5,10 +5,10 @@ nacimiento; el sistema calcula tres números pitagóricos, los funde en un cuart
 —el **Número Personal del Día**— y sobre ese número construye una revelación
 breve. Una sola vez por día, y hasta que el sol vuelva a nacer.
 
-> **Estado: primer entregable.** Están terminados el cálculo numerológico (con
-> tests), la base 3D y la identidad visual. El formulario, el bloqueo diario y la
-> integración con GLM-5.2 son las próximas iteraciones — ver
-> [Hoja de ruta](#hoja-de-ruta).
+> **Estado: el producto funciona de punta a punta.** Formulario, ceremonia,
+> bloqueo diario, backend y respaldo están terminados. Con la clave de NVIDIA
+> configurada, el texto lo escribe GLM-5.2; sin ella, salen las doce
+> revelaciones escritas a mano y la experiencia es idéntica.
 
 ---
 
@@ -16,30 +16,36 @@ breve. Una sola vez por día, y hasta que el sol vuelva a nacer.
 
 ```bash
 npm install     # instala dependencias y vendoriza three/gsap/tipografías
-npm test        # 100 aserciones sobre el núcleo numerológico
-npm run serve   # http://localhost:4321  (servidor estático, sin Workers)
+npm test        # 157 aserciones sobre el núcleo y los textos
 npm run dev     # http://localhost:8788  (wrangler: incluye /functions)
+npm run serve   # http://localhost:4321  (estático; /api/* no responde)
 ```
 
-| Página      | Para qué                                                                    |
-| ----------- | --------------------------------------------------------------------------- |
-| `/`         | Portada. Muestra la figura del Número del Día de hoy.                       |
-| `/lab.html` | Laboratorio visual: las 12 figuras, métricas en vivo y los tests.           |
+Para probar el flujo completo hace falta `npm run dev`: `npm run serve` no
+levanta el runtime de Workers, así que `/api/revelation` no existe y el
+navegador cae al respaldo local (que igual funciona, pero no ejercita el
+backend).
 
-Parámetros útiles del laboratorio:
-
-- `?n=22` — abre directo en una figura.
-- `?q=high\|medium\|low` — fuerza el nivel de calidad (así se pueden validar los
-  tres perfiles, y el camino con bloom, desde una sola máquina).
-- `?test=1` — corre los tests numerológicos al cargar.
-- `?debug=1` — vuelca todos los cálculos en la consola.
+| Página      | Para qué                                                            |
+| ----------- | ------------------------------------------------------------------- |
+| `/`         | El oráculo.                                                         |
+| `/lab.html` | Laboratorio visual: las 12 figuras, métricas en vivo y los tests.   |
 
 Desde la consola del navegador:
 
 ```js
-Oraculo.cast({ name: 'Federico', birthDate: '1980-02-29' }); // lectura completa, con tabla
-Oraculo.test(); // los mismos tests que npm test
+Oraculo.forget();   // borra el bloqueo del día — para probar el flujo más de una vez
+Oraculo.setDebug(true);
+Oraculo.cast({ name: 'Federico', birthDate: '1980-02-29' });
 ```
+
+Parámetros del laboratorio:
+
+- `?n=22` — abre directo en una figura.
+- `?q=high\|medium\|low` — fuerza el nivel de calidad (así se pueden validar los
+  tres perfiles, y el camino con bloom, desde una sola máquina).
+- `?test=1` — corre los tests al cargar.
+- `?debug=1` — vuelca todos los cálculos en la consola. Funciona en las dos páginas.
 
 ---
 
@@ -49,19 +55,29 @@ Oraculo.test(); // los mismos tests que npm test
 .
 ├── functions/                 Cloudflare Pages Functions (el backend)
 │   └── api/
-│       └── health.js          GET /api/health — verifica bindings y secretos
+│       ├── revelation.js      POST — GLM-5.2 + caché en KV + respaldo
+│       └── health.js          GET  — verifica bindings y secretos
 │
 ├── public/                    ← esto es exactamente lo que se despliega
-│   ├── index.html             portada
+│   ├── index.html             el oráculo (las cuatro pantallas)
 │   ├── lab.html               laboratorio visual
 │   ├── favicon.svg
 │   ├── _headers               caché y cabeceras de seguridad
 │   │
 │   ├── js/
+│   │   ├── app.js             el flujo: umbral → ceremonia → revelación
+│   │   │
+│   │   ├── app/               piezas del flujo
+│   │   │   ├── storage.js       identidad y bloqueo diario en localStorage
+│   │   │   ├── api.js           cliente de /api/revelation (nunca falla)
+│   │   │   ├── ceremony.js      la descomposición del nombre
+│   │   │   └── reveal.js        el texto que aparece palabra por palabra
+│   │   │
 │   │   ├── core/              lógica pura, sin DOM ni three.js
 │   │   │   ├── numerology.js    los cuatro números
 │   │   │   ├── dates.js         fechas en hora local (nunca UTC)
 │   │   │   ├── archetypes.js    número → título, figura y vocabulario
+│   │   │   ├── fallbacks.js     las 12 revelaciones a mano + validación de voz
 │   │   │   └── debug.js         volcado a consola
 │   │   │
 │   │   ├── scene/             todo lo que toca la GPU
@@ -72,15 +88,18 @@ Oraculo.test(); // los mismos tests que npm test
 │   │   │   └── shaders/
 │   │   │
 │   │   ├── lib/gsap.js        puente UMD → módulo ES
-│   │   ├── tests/             tests del núcleo (corren en navegador y en Node)
-│   │   ├── cover.js           entrada de la portada
+│   │   ├── tests/             tests (corren en navegador y en Node)
 │   │   └── lab.js             entrada del laboratorio
 │   │
-│   ├── styles/                tokens.css · base.css · cover.css · lab.css
+│   ├── styles/                tokens.css · base.css · app.css · lab.css
 │   └── vendor/                GENERADO — no se commitea (ver más abajo)
 │
 └── scripts/                   vendor.mjs · run-tests.mjs · serve.mjs
 ```
+
+`core/` no sabe que existe el navegador y `app/` no sabe que existe three.js.
+Por eso la Pages Function puede importar `fallbacks.js` y `numerology.js` tal
+cual, sin duplicar una línea: son los mismos archivos que sirve el sitio.
 
 ### Sobre `public/vendor/`
 
@@ -154,6 +173,58 @@ números, casos límite de fechas (bisiestos, meses inválidos, la trampa de UTC
 una prueba de **cobertura total**: toda suma alcanzable (3 a 99) reduce a un
 número que tiene arquetipo y figura, así que la interfaz no puede quedarse sin
 qué dibujar.
+
+También corre `validateRevelation()` sobre las doce revelaciones escritas a mano:
+si una regla que se le exige al modelo no la cumplen los textos propios, la que
+está mal es la regla.
+
+---
+
+## El flujo
+
+```
+  umbral ──(enviás el formulario)──▶ ceremonia ──▶ revelación
+     ▲                                                  │
+     └────(al día siguiente)──── velo cerrado ◀──────────┘
+```
+
+**La ceremonia dura lo que tarda la IA.** La llamada a `/api/revelation` arranca
+en el mismo instante en que empieza la animación y se espera recién al final:
+los siete segundos de la descomposición del nombre son también los siete
+segundos del modelo. No hay spinner porque no hay nada que esperar. Si el texto
+igual llega tarde —red lenta, o `prefers-reduced-motion`, donde la ceremonia
+dura un segundo—, el número se queda latiendo con una línea que sostiene la
+espera.
+
+La animación es DOM y CSS, no three.js: el texto tiene que ser nítido,
+seleccionable y legible por un lector de pantalla, y un canvas no da nada de eso.
+Por la misma razón, la revelación está entera en el DOM desde el primer
+instante y solo se anima su opacidad palabra por palabra — un efecto de máquina
+de escribir que va agregando caracteres sería invisible para un lector de
+pantalla.
+
+### El bloqueo diario
+
+Dos entradas separadas en `localStorage`, y esa separación es toda la lógica:
+
+| Clave                  | Contenido                        | Cuándo se borra              |
+| ---------------------- | -------------------------------- | ---------------------------- |
+| `oraculo:v1:identidad` | nombre y fecha de nacimiento     | nunca (precarga el formulario) |
+| `oraculo:v1:consulta`  | la revelación de hoy y su fecha  | en cuanto la fecha ya no es hoy |
+
+Al cargar, si la consulta guardada no es de hoy se descarta sola y el oráculo
+vuelve a estar disponible. Si la página queda abierta cruzando la medianoche, la
+cuenta regresiva la recarga.
+
+Se guarda en texto plano: hashear no protegería nada —el dato es del usuario, en
+su propio navegador— y para saludarlo por su nombre hay que poder leerlo. Si
+`localStorage` no está disponible (modo privado, cookies bloqueadas), cae a
+memoria y el bloqueo dura lo que dure la pestaña, que es lo máximo honesto que se
+puede prometer ahí.
+
+**El bloqueo es solo local, a propósito.** Otro navegador, otra puerta. Es parte
+de la mística, no un agujero que haya que tapar: no hay cookies de servidor ni
+huellas digitales.
 
 ---
 
@@ -229,57 +300,77 @@ Conectar el repo de GitHub y configurar:
 runtime son V8 isolates con `fetch`/`Request`/`Response` estándar — no hay
 Express, ni servidor, ni `listen`.
 
-Cuando se sume la integración con la IA hará falta, en el panel de Cloudflare:
+Para que el texto lo escriba GLM-5.2 hacen falta dos cosas más en el panel:
 
 - **Variable de entorno secreta** `NVIDIA_API_KEY` (Settings → Environment
   variables → *Encrypt*). Nunca en el código.
-- **Binding de KV** `REVELATIONS` (Settings → Functions → KV namespace bindings).
+- **Binding de KV** llamado `REVELATIONS` (Settings → Functions → KV namespace
+  bindings).
+
+Sin ninguna de las dos el sitio funciona igual: sale el texto de respaldo. Sin KV
+pero con clave, también funciona — solo que genera en cada visita en vez de
+reutilizar.
 
 `GET /api/health` informa si ambos están presentes —solo presencia, jamás el
-valor— y sirve para verificar de una mirada que el proyecto quedó bien cableado.
+valor— y sirve para verificar de una mirada que quedó bien cableado.
+
+---
+
+## La revelación
+
+`POST /api/revelation` → `{ numbers: {...}, dateKey: 'YYYY-MM-DD' }`
+
+**No recibe el nombre, y es deliberado.** El texto se cachea por
+`rev:v1:{número}:{fecha}` y se comparte entre todos los visitantes que ese día
+comparten número; un texto con un nombre adentro sería, para casi todos, el
+nombre de otra persona. El saludo lo pone el navegador, por fuera del texto
+generado. Efecto lateral feliz: **el nombre nunca sale del dispositivo.**
+
+La economía se cae de madura: doce números posibles por día son, como mucho,
+doce generaciones diarias, entre cuántos visitantes sea. A partir de la primera
+visita de cada número todo son lecturas de KV. Eso también vuelve al endpoint
+inmune a que lo martillen — no hay forma de provocar una generación número trece.
+
+**Nunca devuelve un error.** Si falta la clave, si NVIDIA no contesta, o si el
+texto que vuelve no pasa la validación de voz, responde 200 con la revelación
+escrita a mano. Un oráculo que muestra un 500 deja de ser un oráculo.
+
+Lo que no valida **no se cachea**: así el próximo visitante vuelve a intentar la
+generación en vez de heredar un texto flojo hasta la medianoche. El sistema se
+cura solo.
+
+### La voz
+
+El prompt de sistema vive en `functions/api/revelation.js` y la materia prima en
+`core/archetypes.js`: cada número lleva `motifs` (imágenes concretas para la
+metáfora) y una `tension` — una contradicción interna, no una virtud. Eso último
+es lo que evita que la revelación suene a cumplido.
+
+Reglas: español neutro con tuteo, 80 a 150 palabras, tres movimientos (una imagen
+central, una reflexión sobre la contradicción, un llamado concreto o una pregunta
+abierta). Sin nombrar a nadie, sin mencionar números ni el mecanismo, sin
+consolar. **Prohibidas** "energía", "vibración", "abundancia", "manifestar" y
+todo su registro.
+
+`validateRevelation()` verifica cantidad de palabras, palabras vetadas y los
+preámbulos típicos de asistente ("Aquí tienes…", texto entrecomillado). Se aplica
+igual a lo que devuelve el modelo y a los textos propios.
 
 ---
 
 ## Hoja de ruta
 
-**Siguiente — formulario y bloqueo diario**
+Lo que queda, por orden de valor:
 
-Campo de nombre y fecha con transición ceremonial; animación de descomposición
-del nombre letra por letra (`expression.letters` y los `steps` de cada reducción
-ya entregan exactamente los datos que necesita); bloqueo por `localStorage` con
-la clave del día, y estado "ya consultaste hoy" con la revelación guardada y una
-cuenta regresiva hasta la próxima medianoche local
-(`msUntilNextLocalMidnight()` ya está).
-
-El bloqueo es **solo local, a propósito**: entrar desde otro navegador vuelve a
-abrir la puerta. Es parte de la mística —cada puerta es distinta—, no un agujero
-que haya que tapar. Sin cookies de servidor ni fingerprinting.
-
-**Después — GLM-5.2 vía NVIDIA NIM**
-
-`POST /api/revelation` recibe los tres números y el nombre; nunca la fecha de
-nacimiento, que no hace falta del otro lado. La llamada sale desde la Function,
-jamás desde el navegador, para que la clave no se exponga.
-
-- Endpoint `https://integrate.api.nvidia.com/v1` (compatible con OpenAI), modelo
-  `z-ai/glm-5.2`.
-- **Caché en KV con clave `revelacion:{númeroPersonal}:{YYYY-MM-DD}`** — por
-  número y día, *no* por usuario. Todos los que comparten número ese día reciben
-  el mismo texto, así que un día entero cuesta como mucho 12 generaciones y 12
-  escrituras a KV.
-- El navegador además guarda su revelación en `localStorage`, así que recargar la
-  página el mismo día no vuelve a llamar a nada.
-- Fallback a un texto pre-escrito por número si la API no responde: el oráculo
-  nunca muestra un error.
-
-La voz editorial está esbozada en `core/archetypes.js`: cada número lleva
-`motifs` (imágenes concretas para la metáfora) y una `tension` —una contradicción
-interna, no una virtud, que es lo que evita que la revelación suene a cumplido—.
-Reglas del prompt: castellano, 80 a 150 palabras, una imagen central, una
-reflexión y una pregunta abierta; tono poético con referencias sutiles a
-psicoanálisis y filosofía existencial; **prohibidas** las palabras "energía",
-"vibración" y "abundancia", y el registro new age en general. Hay un test que
-verifica que los arquetipos no las usen.
+1. **Probar la voz de GLM-5.2 en serio.** Los textos de respaldo son el patrón de
+   calidad; si el modelo no llega a ese nivel, el que hay que corregir es el
+   prompt. `/api/revelation` devuelve `source` (`ai` \| `cache` \| `fallback`)
+   justamente para poder medirlo.
+2. **Compartir la revelación** — una imagen generada con el número y una línea
+   del texto. Es el vector de crecimiento natural de un producto diario.
+3. **Sonido.** Un pad muy grave en la ceremonia, silenciado por defecto.
+4. **Historial.** Lo que te fue revelado los últimos días, ya guardado en
+   `localStorage` si se cambia `consulta` por una lista acotada.
 
 ---
 

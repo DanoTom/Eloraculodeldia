@@ -27,6 +27,7 @@ import {
   reduceWithTrace,
 } from '../core/numerology.js';
 import { ARCHETYPES } from '../core/archetypes.js';
+import { FALLBACK_REVELATIONS, countWords, fallbackFor, validateRevelation } from '../core/fallbacks.js';
 import { isRealDate, parseDateParts, toDateKey, todayKey } from '../core/dates.js';
 
 /* ------------------------------------------------------------------ */
@@ -300,6 +301,40 @@ function testCoverage(t) {
   t.is('sin clichés new age en los arquetipos', banned, []);
 }
 
+/**
+ * Los textos de respaldo tienen que cumplir exactamente las mismas reglas que
+ * se le exigen al modelo. Si una regla no la cumplen los textos propios, la
+ * regla está mal escrita.
+ */
+function testFallbacks(t) {
+  for (const number of ORACLE_NUMBERS) {
+    const text = FALLBACK_REVELATIONS[number];
+    t.ok(`hay respaldo para el ${number}`, typeof text === 'string' && text.length > 0);
+    if (!text) continue;
+
+    const words = countWords(text);
+    t.ok(`respaldo ${number}: 80-150 palabras (tiene ${words})`, words >= 80 && words <= 150);
+    t.is(`respaldo ${number} pasa la validación`, validateRevelation(text).ok, true);
+
+    // Ningún texto puede nombrar a nadie: se comparte entre todos los que ese
+    // día tienen ese número.
+    t.ok(`respaldo ${number} termina preguntando o llamando a la acción`, /[?¿]|\.\s*$/.test(text.trim()));
+  }
+
+  t.ok('fallbackFor devuelve algo ante un número desconocido', fallbackFor(999).length > 0);
+
+  // El validador tiene que rechazar de verdad.
+  t.is('rechaza vacío', validateRevelation('').ok, false);
+  t.is('rechaza corto', validateRevelation('Dos palabras.').ok, false);
+  t.is('rechaza "energía"', validateRevelation(`${'palabra '.repeat(90)}energía.`).ok, false);
+  t.is('rechaza "abundancia"', validateRevelation(`${'palabra '.repeat(90)}abundancia.`).ok, false);
+  t.is('rechaza preámbulo de asistente', validateRevelation(`Aquí tienes ${'palabra '.repeat(90)}`).ok, false);
+  t.is('rechaza texto entrecomillado', validateRevelation(`"${'palabra '.repeat(90)}"`).ok, false);
+  t.is('acepta un texto correcto', validateRevelation('palabra '.repeat(100)).ok, true);
+
+  t.is('countWords ignora espacios repetidos', countWords('  una   dos \n\n tres '), 3);
+}
+
 /* ------------------------------------------------------------------ */
 /* Ejecución                                                           */
 /* ------------------------------------------------------------------ */
@@ -313,6 +348,7 @@ const SUITES = [
   ['4 · Número Personal del Día', testPersonalDay],
   ['Fechas en hora local', testDates],
   ['Cobertura de figuras y arquetipos', testCoverage],
+  ['Revelaciones de respaldo y validación de voz', testFallbacks],
 ];
 
 /**

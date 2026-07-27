@@ -89,7 +89,7 @@ export const ARCHETYPES = Object.freeze({
     figure: 'octahedron',
     master: false,
     motifs: ['el peso justo', 'lo que se firma', 'la consecuencia que llega puntual'],
-    tension: 'el poder solo se vuelve real cuando aceptás lo que cuesta',
+    tension: 'el poder solo se vuelve real cuando aceptas lo que cuesta',
   },
   9: {
     number: 9,
@@ -113,7 +113,7 @@ export const ARCHETYPES = Object.freeze({
     figure: 'tesseract',
     master: true,
     motifs: ['el plano y el edificio', 'la obra que sobrevive al que la piensa', 'la escala'],
-    tension: 'lo que soñás construir tarda más de lo que dura tu paciencia',
+    tension: 'lo que sueñas construir tarda más de lo que dura tu paciencia',
   },
   33: {
     number: 33,

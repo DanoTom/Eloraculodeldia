@@ -80,6 +80,12 @@ export class OracleScene {
     // cámara (moverla arrastraría también el campo de partículas).
     this.figureOffsetY = options.figureOffsetY ?? 0;
     this.figureScale = options.figureScale ?? 1;
+
+    // Opacidad a la que tiende SIEMPRE la figura. La guarda la escena y no cada
+    // figura suelta, para que al transmutar la nueva entre al nivel actual: si
+    // la figura está atenuada detrás de un texto, cambiar de número no puede
+    // hacer que de golpe suba a full y le pase por encima.
+    this.figureOpacity = options.figureOpacity ?? 1;
     this.composer = null;
     this.bloomPass = null;
     this.figure = null;
@@ -235,12 +241,12 @@ export class OracleScene {
     if (previous) next.object3D.rotation.copy(previous.object3D.rotation);
 
     if (!animate) {
-      next.opacity = 1;
+      next.opacity = this.figureOpacity;
       if (previous) this._removeFigure(previous);
       return next;
     }
 
-    gsap.to(next, { opacity: 1, duration, ease: 'power2.out' });
+    gsap.to(next, { opacity: this.figureOpacity, duration, ease: 'power2.out' });
 
     if (previous) {
       gsap.to(previous, {
@@ -258,6 +264,40 @@ export class OracleScene {
     gsap.killTweensOf(figure);
     this.scene.remove(figure.object3D);
     figure.dispose();
+  }
+
+  /**
+   * Lleva la figura a una opacidad y la deja ahí.
+   *
+   * Cada pantalla pide la suya: la figura es fondo cuando hay que leer un
+   * párrafo, y protagonista cuando el número aterriza.
+   */
+  setFigureOpacity(value, { duration = 1 } = {}) {
+    this.figureOpacity = value;
+    if (this.figure) {
+      gsap.to(this.figure, { opacity: value, duration, ease: 'power2.inOut', overwrite: 'auto' });
+    }
+    return this;
+  }
+
+  /** Reencuadra la figura (posición y tamaño) según lo que pida la pantalla. */
+  setFraming({ offsetY, scale, duration = 1 } = {}) {
+    if (typeof offsetY === 'number') {
+      this.figureOffsetY = offsetY;
+      if (this.figure) {
+        gsap.to(this.figure.object3D.position, { y: offsetY, duration, ease: 'power2.inOut' });
+      }
+    }
+    if (typeof scale === 'number') {
+      this.figureScale = scale;
+      // Se anima `baseScale` y no la escala del objeto: el bucle de la figura
+      // reescribe scale en cada cuadro para la respiración, así que cualquier
+      // tween sobre object3D.scale lo pisaría al instante siguiente.
+      if (this.figure) {
+        gsap.to(this.figure, { baseScale: this._figureScale(), duration, ease: 'power2.inOut' });
+      }
+    }
+    return this;
   }
 
   /** Aparición inicial del campo de partículas. Es el telón que se levanta. */
