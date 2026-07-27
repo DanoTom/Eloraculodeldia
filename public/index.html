@@ -116,26 +116,57 @@
           <hr class="rule" />
 
           <p class="revelation__seal" id="rev-seal"></p>
+
+          <!--
+            Cerrar el velo borra el texto para siempre, así que no alcanza con
+            un clic: hay que sostener mientras el arco completa el círculo.
+            Ver js/app/holdToClose.js — funciona igual con teclado, y con
+            tecnología de asistencia cierra directo.
+          -->
+          <div class="seal" id="seal" hidden>
+            <button class="seal__button" id="close-veil" type="button" aria-describedby="seal-hint">
+              <svg class="seal__ring" viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="seal__track" cx="60" cy="60" r="54" />
+                <circle class="seal__arc" id="seal-arc" cx="60" cy="60" r="54" />
+              </svg>
+              <span class="seal__glyph" aria-hidden="true">✦</span>
+              <span class="sr-only">Cerrar el velo. El texto no se podrá volver a leer.</span>
+            </button>
+
+            <p class="seal__hint" id="seal-hint">
+              mantén presionado para cerrar<br />
+              <span class="seal__warning">el texto no vuelve</span>
+            </p>
+          </div>
         </div>
       </section>
 
       <!-- ---------------------------------------------------------- -->
       <!-- 4 · EL VELO CERRADO                                         -->
       <!-- ---------------------------------------------------------- -->
+      <!--
+        La huella. Del texto no queda nada: quedan el número, el arquetipo y la
+        figura girando. Alcanza para recordar qué te dijo el día, no para
+        releerlo.
+      -->
       <section class="screen" id="screen-locked" hidden>
         <div class="screen__inner locked">
           <p class="eyebrow" id="locked-eyebrow"></p>
 
-          <h1 class="locked__title">
-            El velo ya se abrió <em>para ti</em> hoy
-          </h1>
+          <p class="locked__number" id="locked-number"></p>
+          <p class="locked__archetype" id="locked-archetype"></p>
 
-          <p class="locked__lede">Vuelve cuando el sol se oculte y vuelva a nacer.</p>
+          <h1 class="locked__title">El velo está <em>cerrado</em></h1>
 
-          <p class="locked__countdown" id="locked-countdown" aria-hidden="true"></p>
-          <p class="sr-only" id="locked-countdown-sr"></p>
+          <p class="locked__lede">
+            De lo que leíste queda el número. El texto se fue con el día.
+          </p>
 
-          <button class="btn" id="recall" type="button">Ver lo ya revelado</button>
+          <div class="locked__wait">
+            <p class="locked__countdown" id="locked-countdown" aria-hidden="true"></p>
+            <p class="eyebrow">hasta que el sol vuelva a nacer</p>
+            <p class="sr-only" id="locked-countdown-sr"></p>
+          </div>
         </div>
       </section>
     </main>

@@ -26,10 +26,12 @@ import {
 } from './core/dates.js';
 import { logCast, setDebug } from './core/debug.js';
 import { OracleScene, isWebGLAvailable } from './scene/OracleScene.js';
+import { prefersReducedMotion } from './scene/quality.js';
 
 import { fetchRevelation } from './app/api.js';
 import { Ceremony } from './app/ceremony.js';
-import { revealText, showText } from './app/reveal.js';
+import { HoldToClose } from './app/holdToClose.js';
+import { dissolveText, revealText, showText } from './app/reveal.js';
 import {
   forget,
   isPersistent,
@@ -37,6 +39,7 @@ import {
   readTodaysConsultation,
   saveConsultation,
   saveIdentity,
+  sealConsultation,
 } from './app/storage.js';
 
 /* ------------------------------------------------------------------ */
@@ -257,15 +260,63 @@ function stopCountdown() {
 /* Revelación                                                          */
 /* ------------------------------------------------------------------ */
 
-function paintRevelation({ name, number, text }) {
+function paintRevelation({ name, number }) {
   const archetype = ARCHETYPES[number] ?? ARCHETYPES[1];
 
   $('rev-number').textContent = String(number);
   $('rev-archetype').textContent = archetype.title;
   $('rev-salutation').textContent = `${name},`;
-  $('rev-seal').textContent = 'El velo se cierra hasta la próxima medianoche.';
+  $('rev-seal').textContent = 'Cuando termines de leer, cierra el velo.';
 
   return $('rev-body');
+}
+
+/**
+ * Arma el gesto de cierre y encadena lo que pasa al soltarlo.
+ *
+ * El orden importa: primero se sella en localStorage y recién después se anima.
+ * Si alguien cierra la pestaña en mitad de la disolución, el velo ya quedó
+ * cerrado; al revés, volvería a encontrarse el texto que creyó haber soltado.
+ */
+function armSeal(number) {
+  const seal = $('seal');
+  seal.hidden = false;
+
+  // El gesto aparece con retraso, después de que el texto terminó de revelarse:
+  // ofrecer "cerrar" mientras todavía se está escribiendo sería apurar la lectura.
+  gsap.fromTo(seal, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.1, ease: 'power2.out' });
+
+  // Con una revelación de cien palabras, el gesto queda abajo del pliegue: la
+  // acción más importante de la pantalla no se ve. Desplazar hasta él cuando
+  // aparece lo resuelve y además dice algo — terminaste de leer, esto es lo que
+  // sigue.
+  seal.scrollIntoView({
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    block: 'center',
+  });
+
+  return new HoldToClose($('close-veil'), $('seal-arc'), async () => {
+    sealConsultation();
+
+    // La figura crece y se aclara: lo que se apaga es el texto, no el número.
+    scene?.setFigureOpacity(0.75, { duration: 1.4 });
+
+    await dissolveText($('rev-body'));
+    await new Promise((resolve) => gsap.to(seal, { opacity: 0, duration: 0.5, onComplete: resolve }));
+
+    paintTrace(readTodaysConsultation() ?? { number, dateKey: todayKey() });
+    showScreen('locked');
+    startCountdown();
+  });
+}
+
+/** Pinta la huella: lo único que sobrevive al cierre. */
+function paintTrace(consultation) {
+  const archetype = ARCHETYPES[consultation.number] ?? ARCHETYPES[1];
+
+  $('locked-eyebrow').textContent = formatShortDate(consultation.dateKey);
+  $('locked-number').textContent = String(consultation.number);
+  $('locked-archetype').textContent = archetype.title;
 }
 
 /* ------------------------------------------------------------------ */
@@ -354,16 +405,13 @@ async function consult({ name, birthDate }) {
     source: revelation.source,
   });
 
-  const body = paintRevelation({
-    name: cast.input.name,
-    number: cast.personal.number,
-    text: revelation.text,
-  });
+  const body = paintRevelation({ name: cast.input.name, number: cast.personal.number });
 
   showScreen('revelation');
   ceremony.destroy();
   await revealText(body, revelation.text);
 
+  armSeal(cast.personal.number);
   busy = false;
 }
 
@@ -371,7 +419,7 @@ async function consult({ name, birthDate }) {
 /* Arranque                                                            */
 /* ------------------------------------------------------------------ */
 
-function wireEvents(consultation) {
+function wireEvents() {
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     const values = readForm();
@@ -379,35 +427,48 @@ function wireEvents(consultation) {
   });
 
   $('skip').addEventListener('click', () => ceremony?.skip());
-
-  $('recall').addEventListener('click', () => {
-    const body = paintRevelation({
-      name: consultation.name,
-      number: consultation.number,
-      text: consultation.revelation,
-    });
-    $('rev-seal').textContent = 'Esto ya te fue revelado hoy. El velo se cierra hasta la medianoche.';
-    showText(body, consultation.revelation);
-    showScreen('revelation');
-  });
 }
 
-async function startScene(figure) {
+/**
+ * Vuelve a mostrar la revelación de hoy sin animarla.
+ *
+ * Es el caso de quien consultó y recargó sin haber cerrado el velo: el texto
+ * sigue siendo suyo, con su gesto de cierre todavía disponible. Recargar no
+ * cierra nada; solo el gesto cierra.
+ */
+function restoreRevelation(consultation) {
+  const body = paintRevelation({ name: consultation.name, number: consultation.number });
+  $('rev-seal').textContent = 'Esto se te reveló hoy. Cuando termines, cierra el velo.';
+  showText(body, consultation.revelation);
+  showScreen('revelation', { animate: false });
+  armSeal(consultation.number);
+}
+
+/**
+ * @param {number} figure  número inicial
+ * @param {keyof FRAMING} state  pantalla con la que arranca la sesión — la
+ *   escena se encuadra para ESA, no siempre para el umbral. `showScreen` corre
+ *   antes de que la escena exista, así que su llamada a `setFraming` se pierde y
+ *   el encuadre inicial hay que darlo acá.
+ */
+async function startScene(figure, state) {
   if (!isWebGLAvailable()) {
     document.body.classList.add('no-webgl');
     return null;
   }
 
+  const framing = FRAMING[state] ?? FRAMING.gate;
+
   const instance = new OracleScene($('scene'), {
     figure,
     figureOpacity: 0,
-    figureOffsetY: FRAMING.gate.offsetY,
-    figureScale: FRAMING.gate.scale,
+    figureOffsetY: framing.offsetY,
+    figureScale: framing.scale,
   });
 
   await instance.init();
   instance.start().reveal({ duration: 3 });
-  instance.setFigureOpacity(FRAMING.gate.opacity, { duration: 2.4 });
+  instance.setFigureOpacity(framing.opacity, { duration: 2.4 });
   return instance;
 }
 
@@ -415,22 +476,27 @@ async function boot() {
   buildDateSelects();
 
   const consultation = readTodaysConsultation();
-  const locked = Boolean(consultation);
 
-  // Antes de consultar, la figura del día es la de todos: el Número del Día,
-  // que no necesita ningún dato personal. Ya consultado, es el número propio.
-  const initialFigure = locked ? consultation.number : dayNumber(todayKey()).number;
+  /**
+   * Tres estados, y el que manda es si el velo está CERRADO, no si hubo consulta:
+   *   · sin consulta        → el umbral
+   *   · consulta abierta    → la revelación, con su gesto de cierre
+   *   · consulta cerrada    → la huella
+   */
+  const state = !consultation ? 'gate' : consultation.sealed ? 'locked' : 'revelation';
 
-  wireEvents(consultation);
+  // Antes de consultar, la figura es la del Número del Día, que es igual para
+  // todos y no necesita ningún dato personal. Después, es el número propio.
+  const initialFigure = consultation ? consultation.number : dayNumber(todayKey()).number;
 
-  if (locked) {
-    // El epígrafe dice la fecha y el arquetipo del día: repetir el titular
-    // ("el velo ya se abrió") arriba del titular no aportaba nada.
-    const archetype = ARCHETYPES[consultation.number] ?? ARCHETYPES[1];
-    $('locked-eyebrow').textContent = `${formatShortDate(consultation.dateKey)} · ${archetype.title}`;
+  wireEvents();
 
+  if (state === 'locked') {
+    paintTrace(consultation);
     showScreen('locked', { animate: false });
     startCountdown();
+  } else if (state === 'revelation') {
+    restoreRevelation(consultation);
   } else {
     prefillFromIdentity();
     showScreen('gate', { animate: false });
@@ -445,11 +511,7 @@ async function boot() {
     });
   }
 
-  scene = await startScene(initialFigure);
-  if (scene) {
-    const framing = FRAMING[locked ? 'locked' : 'gate'];
-    scene.setFigureOpacity(framing.opacity, { duration: 2.4 });
-  }
+  scene = await startScene(initialFigure, state);
 
   // Herramientas de consola. `Oraculo.forget()` borra el bloqueo y es lo que
   // hace falta para probar el flujo entero más de una vez por día.

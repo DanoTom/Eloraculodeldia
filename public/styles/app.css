@@ -450,13 +450,130 @@
   text-wrap: pretty;
 }
 
+/* ---- El gesto de cierre ---- */
+
+.seal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.seal[hidden] {
+  display: none;
+}
+
+.seal__button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 5.5rem;
+  height: 5.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  /* Sostener sobre una pantalla táctil no debe seleccionar texto ni abrir el
+     menú contextual: sin esto, el gesto pelea con el navegador. */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+  transition: transform var(--dur-mid) var(--ease-out);
+}
+
+.seal__button.is-holding {
+  transform: scale(0.955);
+}
+
+.seal__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Arranca a las 12 y avanza como un reloj. */
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.seal__track,
+.seal__arc {
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.seal__track {
+  stroke: var(--ink-line);
+}
+
+.seal__arc {
+  stroke: var(--gold-soft);
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--gold) 65%, transparent));
+}
+
+.seal__glyph {
+  font-size: var(--step-1);
+  line-height: 1;
+  color: var(--text-faint);
+  transition: color var(--dur-mid) var(--ease-out);
+}
+
+.seal__button:hover .seal__glyph,
+.seal__button.is-holding .seal__glyph {
+  color: var(--gold-soft);
+}
+
+.seal__button.is-sealed .seal__glyph {
+  color: var(--gold-pale);
+}
+
+.seal__hint {
+  font-size: var(--step--2);
+  line-height: 1.7;
+  letter-spacing: var(--tracking-mid);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.seal__warning {
+  color: color-mix(in srgb, var(--warn) 70%, transparent);
+}
+
 /* ================================================================== */
 /* 4 · El velo cerrado                                                 */
 /* ================================================================== */
 
+/**
+ * La huella.
+ *
+ * El número es lo primero y lo más grande: es lo único que sobrevive al día,
+ * así que se comporta como el protagonista y no como un dato al margen.
+ */
+.locked__number {
+  font-family: var(--font-serif);
+  font-size: clamp(4rem, 18vw, 7rem);
+  font-weight: 300;
+  line-height: 1;
+  color: var(--gold-pale);
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 0 30px color-mix(in srgb, var(--gold) 60%, transparent),
+    0 0 80px color-mix(in srgb, var(--gold) 32%, transparent);
+}
+
+.locked__archetype {
+  font-family: var(--font-serif);
+  font-size: var(--step-2);
+  font-style: italic;
+  color: var(--text);
+}
+
 .locked__title {
-  font-size: var(--step-4);
+  font-size: var(--step-2);
   text-wrap: balance;
+  color: color-mix(in srgb, var(--text) 70%, transparent);
 }
 
 .locked__title em {
@@ -470,6 +587,14 @@
   font-style: italic;
   color: color-mix(in srgb, var(--text) 78%, transparent);
   text-wrap: pretty;
+}
+
+.locked__wait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin-block-start: var(--space-s);
 }
 
 .locked__countdown {

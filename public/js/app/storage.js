@@ -109,7 +109,8 @@ export function saveIdentity({ name, birthDate }) {
  * @property {string} birthDate
  * @property {number} number      Número Personal del Día
  * @property {object} numbers     { expression, lifeMission, day, personal }
- * @property {string} revelation  el texto ya revelado
+ * @property {string} [revelation] el texto revelado — se BORRA al cerrar el velo
+ * @property {boolean} [sealed]   true una vez que se cerró el velo
  * @property {string} source      'ai' | 'cache' | 'fallback' | 'fallback-local'
  * @property {string} createdAt
  */
@@ -131,12 +132,32 @@ export function readTodaysConsultation(now = new Date()) {
     return null;
   }
 
-  if (!value.revelation || !value.number) {
+  // Una consulta sellada YA NO tiene texto: eso es lo normal, no un dato roto.
+  // Lo único que siempre tiene que estar es el número.
+  if (!value.number || (!value.sealed && !value.revelation)) {
     clearConsultation();
     return null;
   }
 
   return value;
+}
+
+/**
+ * Cierra el velo: borra el texto de la revelación y deja la huella.
+ *
+ * Después de esto queda el número, el arquetipo y la fecha —suficiente para
+ * recordar qué te dijo el día— pero el texto no se puede volver a leer. Es
+ * intencional: lo que se puede releer cuando uno quiere no se lee con la misma
+ * atención.
+ *
+ * Recargar la página NO cierra el velo. Solo este gesto lo cierra.
+ */
+export function sealConsultation() {
+  const current = read(KEY_CONSULTATION);
+  if (!current) return false;
+
+  const { revelation, ...trace } = current;
+  return write(KEY_CONSULTATION, { ...trace, sealed: true, sealedAt: new Date().toISOString() });
 }
 
 /** @param {Omit<Consultation, 'createdAt'>} consultation */

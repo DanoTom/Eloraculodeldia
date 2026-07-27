@@ -189,10 +189,20 @@ está mal es la regla.
 ## El flujo
 
 ```
-  umbral ──(enviás el formulario)──▶ ceremonia ──▶ revelación
+  umbral ──(envías el formulario)──▶ ceremonia ──▶ revelación
      ▲                                                  │
-     └────(al día siguiente)──── velo cerrado ◀──────────┘
+     │                                        (mantienes presionado)
+     │                                                  ▼
+     └────────(al día siguiente)──────────────── la huella
 ```
+
+Al cargar, el estado lo decide si el velo está **cerrado**, no si hubo consulta:
+
+| Estado | Pantalla |
+| ------ | -------- |
+| Sin consulta hoy | El umbral |
+| Consultaste y no cerraste | La revelación, con su gesto de cierre |
+| Cerraste | La huella |
 
 **La ceremonia dura lo que tarda la IA.** La llamada a `/api/revelation` arranca
 en el mismo instante en que empieza la animación y se espera recién al final:
@@ -209,6 +219,34 @@ instante y solo se anima su opacidad palabra por palabra — un efecto de máqui
 de escribir que va agregando caracteres sería invisible para un lector de
 pantalla.
 
+### Cerrar el velo
+
+Terminada la lectura aparece el gesto de cierre, y la página se desplaza sola
+hasta él: con cien palabras arriba, la acción más importante de la pantalla
+quedaba abajo del pliegue.
+
+**No es un botón, es un gesto.** Cerrar borra la revelación para siempre, y un
+clic suelto es demasiado barato para algo que no se puede deshacer: hay que
+sostener mientras un arco dorado completa el círculo. Soltar antes, o alejar el
+dedo, aborta. Después queda la huella —el número, el arquetipo y la figura
+girando—, suficiente para recordar qué te dijo el día pero no para releerlo. Lo
+que se puede releer cuando uno quiere no se lee con la misma atención.
+
+Recargar **no** cierra el velo: la revelación es tuya hasta que decidas
+soltarla. Solo el gesto cierra.
+
+Un gesto de mantener presionado deja afuera a mucha gente, así que hay tres
+caminos al mismo resultado: puntero, Espacio o Enter sostenidos, y —para
+tecnología de asistencia o control por voz, que solo pueden emitir un `click`—
+cierre directo sin sostener nada. Con `prefers-reduced-motion` tampoco hay
+espera: un clic alcanza.
+
+Detalle que costó encontrar: `setPointerCapture()` dispara `pointerleave` de
+forma **sincrónica** sobre el elemento, así que escuchar ese evento para abortar
+cancela el gesto en el mismo instante en que empieza. Con captura de puntero
+`pointerleave` no significa "se fue"; alejarse se detecta midiendo la posición
+en `pointermove`.
+
 ### El bloqueo diario
 
 Dos entradas separadas en `localStorage`, y esa separación es toda la lógica:
@@ -217,6 +255,11 @@ Dos entradas separadas en `localStorage`, y esa separación es toda la lógica:
 | ---------------------- | -------------------------------- | ---------------------------- |
 | `oraculo:v1:identidad` | nombre y fecha de nacimiento     | nunca (precarga el formulario) |
 | `oraculo:v1:consulta`  | la revelación de hoy y su fecha  | en cuanto la fecha ya no es hoy |
+
+Al cerrar el velo, `sealConsultation()` borra el texto de esa entrada y deja el
+resto. Se sella **antes** de animar: si alguien cierra la pestaña en mitad de la
+disolución, el velo ya quedó cerrado — al revés, volvería a encontrarse el texto
+que creyó haber soltado.
 
 Al cargar, si la consulta guardada no es de hoy se descarta sola y el oráculo
 vuelve a estar disponible. Si la página queda abierta cruzando la medianoche, la

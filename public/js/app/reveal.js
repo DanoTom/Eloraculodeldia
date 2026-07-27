@@ -78,8 +78,39 @@ export function revealText(container, text, { stagger = 0.035 } = {}) {
   });
 }
 
-/** Muestra el texto ya revelado, sin animación. Lo usa el estado "ya consultaste". */
+/** Muestra el texto ya revelado, sin animación. */
 export function showText(container, text) {
   const words = typeset(container, text);
   gsap.set(words, { opacity: 1, y: 0, filter: 'none' });
+}
+
+/**
+ * Disuelve el texto al cerrar el velo.
+ *
+ * Se va al revés de como llegó —de la última palabra a la primera— y hacia
+ * arriba. Que se deshaga en el orden inverso al que se leyó hace que se sienta
+ * como algo que se retira, no como una pantalla que se apaga.
+ *
+ * @returns {Promise<void>}
+ */
+export function dissolveText(container) {
+  const words = [...container.querySelectorAll('.revelation__word')];
+  if (words.length === 0) return Promise.resolve();
+
+  if (prefersReducedMotion()) {
+    gsap.set(words, { opacity: 0 });
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    gsap.to(words, {
+      opacity: 0,
+      y: -14,
+      filter: 'blur(6px)',
+      duration: 0.9,
+      stagger: { each: Math.min(0.02, 1.6 / words.length), from: 'end' },
+      ease: 'power2.in',
+      onComplete: resolve,
+    });
+  });
 }
