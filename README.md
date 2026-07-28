@@ -64,7 +64,8 @@ Parámetros del laboratorio:
 │   │   └── health.js          GET  — verifica bindings y secretos
 │   └── lib/
 │       ├── respond.js         respuestas JSON con las cabeceras correctas
-│       └── nim.js             endpoint y modelo de NVIDIA, en un solo lugar
+│       ├── nim.js             endpoint y modelo de NVIDIA, en un solo lugar
+│       └── revelationCache.js las dos capas de caché (KV y Cache API)
 │
 ├── public/                    ← esto es exactamente lo que se despliega
 │   ├── index.html             el oráculo (las cuatro pantallas)
@@ -521,8 +522,24 @@ generado. Efecto lateral feliz: **el nombre nunca sale del dispositivo.**
 
 La economía se cae de madura: doce números posibles por día son, como mucho,
 doce generaciones diarias, entre cuántos visitantes sea. A partir de la primera
-visita de cada número todo son lecturas de KV. Eso también vuelve al endpoint
+visita de cada número todo son lecturas de caché. Eso también vuelve al endpoint
 inmune a que lo martillen — no hay forma de provocar una generación número trece.
+
+### Dos capas de caché
+
+| Capa | Alcance | Configuración |
+| ---- | ------- | ------------- |
+| Workers KV | **Global**: doce generaciones diarias para todo el planeta | Crear namespace + declararlo en `wrangler.jsonc` |
+| Cache API | **Por centro de datos**: doce por colo y por día | Ninguna — `caches.default` siempre está |
+
+La segunda no reemplaza a la primera: existe para que el control de costos
+funcione **desde el primer despliegue**, antes de que nadie se acuerde de crear
+el namespace. Sin ella, un despliegue sin KV genera un texto en cada visita — que
+es exactamente el problema que el caché venía a resolver. Cuando KV aparece, pasa
+a mandar sola.
+
+El campo `source` de la respuesta dice qué pasó: `ai`, `cache-kv`, `cache-edge` o
+`fallback`.
 
 **Nunca devuelve un error.** Si falta la clave, si NVIDIA no contesta, o si el
 texto que vuelve no pasa la validación de voz, responde 200 con la revelación

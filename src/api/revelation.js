@@ -15,8 +15,12 @@
  * ECONOMÍA
  *   Doce números posibles × un día = como máximo doce generaciones diarias, sin
  *   importar cuánta gente entre. A partir de la primera visita de cada número,
- *   todo son lecturas de KV. Eso también hace que el endpoint sea inmune a que
- *   lo martillen: no hay forma de provocar una generación número trece.
+ *   todo son lecturas de caché. Eso también hace que el endpoint sea inmune a
+ *   que lo martillen: no hay forma de provocar una generación número trece.
+ *
+ *   El caché tiene dos capas (ver lib/revelationCache.js): KV si está
+ *   configurado, y si no la Cache API del runtime, que no necesita ningún
+ *   binding. Así el control de costos funciona desde el primer despliegue.
  *
  * NUNCA DEVUELVE ERROR
  *   Si falta la clave, si NVIDIA no responde, o si el texto que vuelve no pasa
@@ -32,9 +36,7 @@ import { ARCHETYPES } from '../../public/js/core/archetypes.js';
 import { BANNED_WORDS, fallbackFor, validateRevelation } from '../../public/js/core/fallbacks.js';
 import { json } from '../lib/respond.js';
 import { MODEL, NIM_CHAT_URL } from '../lib/nim.js';
-
-/** Tres días: la misma fecha local sigue viva ~50 h por husos horarios. */
-const CACHE_TTL_SECONDS = 259200;
+import { readCachedRevelation, writeCachedRevelation } from '../lib/revelationCache.js';
 
 /** Por debajo del límite de la plataforma, con margen para leer y escribir KV. */
 const NIM_TIMEOUT_MS = 20000;
@@ -195,18 +197,10 @@ export async function handleRevelation(request, env, ctx) {
   if (!isPlausibleToday(dateKey)) return json({ error: 'fecha fuera de rango' }, 400);
 
   const number = numbers.personal;
-  const cacheKey = `rev:v1:${number}:${dateKey}`;
-  const kv = env.REVELATIONS;
 
   // 1 · ¿Ya lo escribimos hoy para este número?
-  if (kv) {
-    try {
-      const cached = await kv.get(cacheKey);
-      if (cached) return json({ text: cached, source: 'cache', number, dateKey });
-    } catch (error) {
-      console.warn(`KV no disponible para leer: ${error.message}`);
-    }
-  }
+  const cached = await readCachedRevelation(env, number, dateKey);
+  if (cached) return json({ text: cached.text, source: cached.source, number, dateKey });
 
   // 2 · Sin clave configurada, el respaldo es la respuesta correcta, no un error.
   if (!env.NVIDIA_API_KEY) {
@@ -225,15 +219,7 @@ export async function handleRevelation(request, env, ctx) {
       return json({ text: fallbackFor(number), source: 'fallback', number, dateKey });
     }
 
-    if (kv) {
-      // `waitUntil` deja que la escritura termine después de contestar: el
-      // usuario no espera a KV para leer su revelación.
-      ctx.waitUntil(
-        kv
-          .put(cacheKey, text, { expirationTtl: CACHE_TTL_SECONDS })
-          .catch((error) => console.warn(`KV no disponible para escribir: ${error.message}`)),
-      );
-    }
+    writeCachedRevelation(env, ctx, number, dateKey, text);
 
     return json({ text, source: 'ai', number, dateKey });
   } catch (error) {
